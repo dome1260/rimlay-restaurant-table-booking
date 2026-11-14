@@ -23,7 +23,10 @@ const LEAD: Record<BookingEmailKind, string> = {
 };
 
 // SYS-05 / TC-107: only the appointment time is shown, never the internal EDD end time.
-export function renderBookingEmail(kind: BookingEmailKind, data: BookingEmailData): { subject: string; body: string } {
+export function renderBookingEmail(
+  kind: BookingEmailKind,
+  data: BookingEmailData,
+): { subject: string; body: string; html: string } {
   const lines = [
     `สวัสดีคุณ ${data.name}`,
     "",
@@ -36,5 +39,27 @@ export function renderBookingEmail(kind: BookingEmailKind, data: BookingEmailDat
     "",
     "Rimlay",
   ];
-  return { subject: SUBJECT[kind], body: lines.join("\n") };
+  return { subject: SUBJECT[kind], body: lines.join("\n"), html: renderHtml(kind, data) };
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function renderHtml(kind: BookingEmailKind, data: BookingEmailData): string {
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:4px 16px 4px 0;color:#57534e">${label}</td><td style="padding:4px 0;font-weight:600">${escapeHtml(value)}</td></tr>`;
+  return [
+    '<div style="font-family:system-ui,sans-serif;color:#1c1917;line-height:1.6">',
+    `<p>สวัสดีคุณ ${escapeHtml(data.name)}</p>`,
+    `<p>${LEAD[kind]}</p>`,
+    "<table>",
+    row("รหัสการจอง", data.code),
+    row("วันที่", formatThaiDate(data.date)),
+    row("เวลา", `${data.time} น.`),
+    row("จำนวนที่นั่ง", `${data.party} ท่าน`),
+    "</table>",
+    "<p>Rimlay</p>",
+    "</div>",
+  ].join("");
 }

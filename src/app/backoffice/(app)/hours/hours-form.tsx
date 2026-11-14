@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition, type FormEvent } from "react";
+import { AffectedDialog } from "@/components/backoffice/AffectedDialog";
 import { Switch } from "@/components/backoffice/Switch";
 import { reportResult, useToast } from "@/components/backoffice/Toast";
 import { FormError, PageHeader, primaryButton } from "@/components/backoffice/ui";
@@ -17,12 +18,23 @@ const selectClass =
 
 export function HoursForm({ days: initial }: { days: DayState[] }) {
   const [days, setDays] = useState(initial);
+  const [pendingSave, setPendingSave] = useState<{ affected: NonNullable<ActionState["affected"]>; formData: FormData } | null>(null);
   const toast = useToast();
   const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
     const result = await saveBusinessHours(prev, formData);
-    reportResult(toast, result, "บันทึกเวลาทำการแล้ว");
+    if (result.affected) setPendingSave({ affected: result.affected, formData });
+    else reportResult(toast, result, "บันทึกเวลาทำการแล้ว");
     return result;
   }, {});
+
+  async function confirmSave(): Promise<ActionState> {
+    const formData = new FormData();
+    for (const [key, value] of pendingSave?.formData.entries() ?? []) formData.append(key, value);
+    formData.set("confirmed", "1");
+    const result = await saveBusinessHours({}, formData);
+    reportResult(toast, result, "บันทึกเวลาทำการแล้ว");
+    return result;
+  }
 
   const [, startTransition] = useTransition();
 
@@ -39,6 +51,8 @@ export function HoursForm({ days: initial }: { days: DayState[] }) {
   }
 
   return (
+    <>
+    <AffectedDialog affected={pendingSave?.affected ?? null} onClose={() => setPendingSave(null)} onConfirm={confirmSave} />
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <PageHeader
         title="เวลาทำการ"
@@ -126,5 +140,6 @@ export function HoursForm({ days: initial }: { days: DayState[] }) {
         </table>
       </section>
     </form>
+    </>
   );
 }

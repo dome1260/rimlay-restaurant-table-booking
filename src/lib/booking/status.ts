@@ -20,6 +20,15 @@ export const STATUS_STYLE: Record<BookingStatus, string> = {
   cancelled: "bg-rose-100 text-rose-800",
 };
 
+export const STATUS_DOT: Record<BookingStatus, string> = {
+  waiting: "bg-amber-500",
+  arrived: "bg-sky-500",
+  seated: "bg-emerald-500",
+  closed: "bg-stone-500",
+  system_closed: "bg-slate-500",
+  cancelled: "bg-rose-500",
+};
+
 export const CHANNEL_LABEL: Record<BookingChannel, string> = {
   web: "Web app",
   walk_in: "Walk-in",

@@ -4,13 +4,17 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { fieldErrorsFrom, success, type ActionState } from "@/lib/action-state";
-import { businessHoursSchema, holidaySchema, isPastDate } from "@/lib/store/schema";
+import { affectedByHoliday, affectedByHours, describeHoursChange, type DayHours } from "@/lib/booking/affected";
+import { loadOpenBookings } from "@/lib/booking/affected-query";
+import { formatThaiDate } from "@/lib/booking/format";
+import { getNow } from "@/lib/clock";
+import { trimSeconds } from "@/lib/store/quota";
+import { bangkokToday, businessHoursSchema, holidaySchema, isPastDate } from "@/lib/store/schema";
 
 const PATH = "/backoffice/hours";
 
-// TODO(Phase 2, ADM-08): before saving, find future bookings that fall on a closed day or
-// outside the new hours and make the Admin confirm the list. No bookings exist yet, so this
-// saves directly; the new hours only affect new bookings either way.
+// ADM-08: if open bookings fall on a day that is now closed or outside the new hours, nothing is
+// saved until the Admin confirms (confirmed=1). The bookings themselves are never touched.
 export async function saveBusinessHours(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireRole("admin");
 
@@ -37,6 +41,21 @@ export async function saveBusinessHours(_prev: ActionState, formData: FormData):
     close_time: d.isOpen ? d.close : null,
   }));
   const supabase = await createClient();
+
+  if (formData.get("confirmed") !== "1") {
+    const { data: current } = await supabase.from("business_hours").select("weekday, is_open, open_time, close_time");
+    const before: DayHours[] = (current ?? []).map((r) => ({
+      weekday: r.weekday,
+      isOpen: r.is_open,
+      open: r.open_time ? trimSeconds(r.open_time) : "",
+      close: r.close_time ? trimSeconds(r.close_time) : "",
+    }));
+    const after: DayHours[] = parsed.data.map((d) => ({ weekday: d.weekday, isOpen: d.isOpen, open: d.open, close: d.close }));
+    const today = bangkokToday(await getNow());
+    const bookings = affectedByHours(await loadOpenBookings(today), before, after, today);
+    if (bookings.length > 0) return { affected: { summary: describeHoursChange(before, after), bookings } };
+  }
+
   const { error } = await supabase.from("business_hours").upsert(rows, { onConflict: "weekday" });
   if (error) return { error: "บันทึกไม่สำเร็จ กรุณาลองใหม่" };
 
@@ -53,8 +72,14 @@ export async function addHoliday(_prev: ActionState, formData: FormData): Promis
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error) };
   if (isPastDate(parsed.data.date)) return { fieldErrors: { date: "เลือกวันที่ผ่านมาแล้วไม่ได้" } };
 
-  // TODO(Phase 2, ADM-08): warn about existing bookings on this date before adding.
   const supabase = await createClient();
+  if (formData.get("confirmed") !== "1") {
+    const today = bangkokToday(await getNow());
+    const bookings = affectedByHoliday(await loadOpenBookings(today), parsed.data.date, today);
+    if (bookings.length > 0) {
+      return { affected: { summary: `เพิ่มวันหยุดพิเศษ ${formatThaiDate(parsed.data.date)}`, bookings } };
+    }
+  }
   const { error } = await supabase
     .from("special_holidays")
     .insert({ holiday_date: parsed.data.date, note: parsed.data.note ?? null, created_by: profile.id });

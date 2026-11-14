@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { AffectedDialog } from "@/components/backoffice/AffectedDialog";
 import { reportResult, useToast } from "@/components/backoffice/Toast";
 import { Field, FormError, inputClass, secondaryButton } from "@/components/backoffice/ui";
 import { submittedValues, type ActionState } from "@/lib/action-state";
@@ -20,11 +21,24 @@ function formatDate(date: string): string {
 
 export function HolidaysCard({ holidays, today }: { holidays: Holiday[]; today: string }) {
   const toast = useToast();
+  const [pendingAdd, setPendingAdd] = useState<{ affected: NonNullable<ActionState["affected"]>; formData: FormData } | null>(null);
+  const [resetKey, setResetKey] = useState(0);
   const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
     const result = await addHoliday(prev, formData);
-    reportResult(toast, result, `เพิ่มวันหยุดพิเศษ ${formatDate(String(formData.get("date") ?? ""))} แล้ว`);
+    if (result.affected) setPendingAdd({ affected: result.affected, formData });
+    else reportResult(toast, result, `เพิ่มวันหยุดพิเศษ ${formatDate(String(formData.get("date") ?? ""))} แล้ว`);
     return { ...result, values: submittedValues(formData) };
   }, {});
+
+  async function confirmAdd(): Promise<ActionState> {
+    const formData = new FormData();
+    for (const [key, value] of pendingAdd?.formData.entries() ?? []) formData.append(key, value);
+    formData.set("confirmed", "1");
+    const result = await addHoliday({}, formData);
+    reportResult(toast, result, `เพิ่มวันหยุดพิเศษ ${formatDate(String(formData.get("date") ?? ""))} แล้ว`);
+    if (result.ok) setResetKey((k) => k + 1);
+    return result;
+  }
   const [removingId, setRemovingId] = useState<string>();
   const [, startTransition] = useTransition();
 
@@ -44,8 +58,9 @@ export function HolidaysCard({ holidays, today }: { holidays: Holiday[]; today: 
         <p className="text-[13px] text-rimlay-driftwood">ปิดทั้งวัน ลูกค้าจองวันนั้นไม่ได้</p>
       </div>
 
+      <AffectedDialog affected={pendingAdd?.affected ?? null} onClose={() => setPendingAdd(null)} onConfirm={confirmAdd} />
       {/* key resets the fields after each successful add */}
-      <form action={action} key={state.nonce ?? 0} noValidate className="flex flex-col gap-3">
+      <form action={action} key={`${state.nonce ?? 0}-${resetKey}`} noValidate className="flex flex-col gap-3">
         <FormError message={state.error} />
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-40 flex-1">

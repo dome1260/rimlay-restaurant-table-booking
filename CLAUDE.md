@@ -26,8 +26,8 @@
 |---|---|---|---|
 | 0 | Login หลังบ้าน + หน้าหลัก 1 หน้า, profiles + RLS, brand + โลโก้ | BO-01 | เสร็จ |
 | 1 | หลังบ้าน ส่วนที่ 1 — ตั้งค่าร้าน + ผู้ใช้: โต๊ะ, เวลาทำการ, วันหยุดพิเศษ, จัดการผู้ใช้, ลบบัญชีตัวเอง | ADM-01, 02, 03, 06, 07 | เสร็จ (ผลทดสอบบันทึกในชีตแล้ว) |
-| 2A | หลังบ้าน ส่วนที่ 2 (ครึ่งแรก) — schema การจอง, logic slot/quota/EDD (RPC ใน DB), รายการจอง, สร้างคิว walk-in/phone-in, หน้ารายละเอียด + ประวัติสถานะ, จัดโต๊ะ/ปิดโต๊ะ/ยกเลิก/แก้ไข, เวลาจำลอง (dev), email แบบ fallback (บันทึกลง email_outbox) | SYS-01, 02, 05, STF-01–08, ADM-05 | เสร็จ (ผลทดสอบบันทึกในชีตแล้ว; รอ commit) |
-| 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง (รอ App Password), เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | |
+| 2A | หลังบ้าน ส่วนที่ 2 (ครึ่งแรก) — schema การจอง, logic slot/quota/EDD (RPC ใน DB), รายการจอง, สร้างคิว walk-in/phone-in, หน้ารายละเอียด + ประวัติสถานะ, จัดโต๊ะ/ปิดโต๊ะ/ยกเลิก/แก้ไข, เวลาจำลอง (dev), email แบบ fallback (บันทึกลง email_outbox) | SYS-01, 02, 05, STF-01–08, ADM-05 | เสร็จ (commit 38176b5) |
+| 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง (รอ App Password), เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | โค้ดเสร็จ รอทดสอบบน browser |
 | 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron + pg_net) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | |
 | 4 | ลูกค้าจองโต๊ะ (C1–C6) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | |
 | 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | |
@@ -54,7 +54,8 @@
 ## Booking rules live in the database
 - ทุกการเขียนคิวผ่าน RPC (`create_booking`, `update_booking`, `change_booking_status`, `assign_tables`) เรียกด้วย secret key จาก Server Action หลัง `requireRole` — ห้ามเขียนตาราง `bookings` ตรงๆ; logic ฝั่ง `src/lib/booking/` ใช้แสดงผลเท่านั้น DB ตรวจซ้ำเสมอ
 - เวลา "ตอนนี้" ของฝั่ง server ต้องมาจาก `getNow()` (`src/lib/clock.ts`); โหมด dev ตั้งเวลาจำลองได้จากแถบบนหน้าหลังบ้าน (production ไม่อ่าน cookie นี้)
-- Email: ยังไม่ส่งจริงจนกว่าจะมี `GMAIL_USER` / `GMAIL_APP_PASSWORD` — ตอนนี้บันทึกลง `email_outbox` (status `skipped`)
+- Email: ส่งผ่าน Gmail SMTP (Nodemailer) เมื่อมี `GMAIL_USER` / `GMAIL_APP_PASSWORD` โดยเรียกใน `after()` และบันทึกผลลง `email_outbox` (`sent` / `failed`); ถ้าไม่มี env บันทึกเป็น `skipped`
+- ADM-08: เปลี่ยนเวลาทำการ/วันหยุด/ปิดโต๊ะ/ลดที่นั่ง จะไม่บันทึกจนกว่า Admin ยืนยันรายการคิวที่กระทบ (`src/lib/booking/affected.ts`) คิวเดิมไม่ถูกยกเลิกอัตโนมัติ
 
 ## Conventions
 

@@ -8,6 +8,7 @@ import { rpcErrorMessage } from "@/lib/booking/errors";
 import { CHANNEL_LABEL, ACTIVE_STATUSES, type BookingChannel, type BookingStatus } from "@/lib/booking/status";
 import { createBookingSchema, editBookingSchema } from "@/lib/booking/schema";
 import { getNow } from "@/lib/clock";
+import { after } from "next/server";
 import { sendBookingEmail } from "@/lib/email/send";
 import { trimSeconds } from "@/lib/store/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -84,7 +85,7 @@ export async function createBooking(_prev: ActionState, formData: FormData): Pro
     return failure(error);
   }
 
-  await sendBookingEmail(id, "created");
+  after(() => sendBookingEmail(id, "created"));
   refresh();
   return success();
 }
@@ -136,7 +137,7 @@ export async function updateBooking(id: string, _prev: ActionState, formData: Fo
     before.customer_name !== input.name ||
     (before.email ?? "") !== input.email ||
     (before.note ?? "") !== input.note;
-  if (changed) await sendBookingEmail(id, "edited");
+  if (changed) after(() => sendBookingEmail(id, "edited"));
 
   refresh();
   return success();
@@ -166,7 +167,7 @@ export async function closeTable(id: string): Promise<ActionState> {
 
 export async function cancelBooking(id: string): Promise<ActionState> {
   const result = await changeStatus(id, "cancelled");
-  if (result.ok) await sendBookingEmail(id, "cancelled");
+  if (result.ok) after(() => sendBookingEmail(id, "cancelled"));
   return result;
 }
 

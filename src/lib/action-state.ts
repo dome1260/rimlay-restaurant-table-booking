@@ -1,3 +1,5 @@
+import type { AffectedBooking } from "@/lib/booking/affected";
+
 // Shared result shape for form Server Actions used with useActionState.
 export type ActionState = {
   ok?: boolean;
@@ -12,6 +14,9 @@ export type ActionState = {
   values?: Record<string, string>;
   // Optional pointer shown with an error, e.g. "view the existing booking" on a duplicate phone.
   link?: { href: string; label: string };
+  // ADM-08: the change was NOT saved because it would affect existing bookings. The Admin must
+  // confirm; the action is then called again with confirmed=1.
+  affected?: { summary: string; bookings: AffectedBooking[] };
 };
 
 export function submittedValues(formData: FormData): Record<string, string> {

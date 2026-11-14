@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getMenuForRole } from "./menu";
+import { getMenuForRole, splitBottomNav } from "./menu";
 import { hasRole } from "./roles";
 
 describe("hasRole", () => {
@@ -23,13 +23,32 @@ describe("getMenuForRole", () => {
     expect(keys).toEqual(["home", "bookings", "calendar", "dashboard", "tables", "hours", "users"]);
   });
 
-  it("only exposes pages that exist so far (Phase 2A)", () => {
+  it("only exposes pages that exist so far (Phase 2B)", () => {
     const available = getMenuForRole("admin").filter((m) => m.available).map((m) => m.key);
-    expect(available).toEqual(["home", "bookings", "tables", "hours", "users"]);
+    expect(available).toEqual(["home", "bookings", "calendar", "tables", "hours", "users"]);
   });
 
   it("keeps the Admin settings pages out of the staff menu", () => {
     const staffAvailable = getMenuForRole("staff").filter((m) => m.available).map((m) => m.key);
-    expect(staffAvailable).toEqual(["home", "bookings"]);
+    expect(staffAvailable).toEqual(["home", "bookings", "calendar"]);
+  });
+});
+
+describe("splitBottomNav", () => {
+  it("shows every available item when they fit in the bar (Staff)", () => {
+    const { bar, more } = splitBottomNav(getMenuForRole("staff"));
+    expect(bar.map((m) => m.key)).toEqual(["home", "bookings", "calendar"]);
+    expect(more).toEqual([]);
+  });
+
+  it("moves the overflow into the more sheet (Admin)", () => {
+    const { bar, more } = splitBottomNav(getMenuForRole("admin"));
+    expect(bar.map((m) => m.key)).toEqual(["home", "bookings", "calendar", "tables"]);
+    expect(more.map((m) => m.key)).toEqual(["hours", "users"]);
+  });
+
+  it("skips pages that are not built yet", () => {
+    const { bar, more } = splitBottomNav(getMenuForRole("admin"));
+    expect([...bar, ...more].some((m) => m.key === "dashboard")).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { AffectedDialog } from "@/components/backoffice/AffectedDialog";
 import { Modal } from "@/components/backoffice/Modal";
 import { Switch } from "@/components/backoffice/Switch";
 import { reportResult, useToast } from "@/components/backoffice/Toast";
@@ -21,6 +22,7 @@ type Table = { id: string; name: string; seats: number; is_active: boolean };
 export function TablesManager({ tables, maxQuota }: { tables: Table[]; maxQuota: number }) {
   const [dialog, setDialog] = useState<{ mode: "create" } | { mode: "edit"; table: Table } | null>(null);
   const [pendingId, setPendingId] = useState<string>();
+  const [affected, setAffected] = useState<{ affected: NonNullable<ActionState["affected"]>; table: Table } | null>(null);
   const [, startTransition] = useTransition();
   const toast = useToast();
   const activeCount = tables.filter((t) => t.is_active).length;
@@ -29,9 +31,17 @@ export function TablesManager({ tables, maxQuota }: { tables: Table[]; maxQuota:
     setPendingId(table.id);
     startTransition(async () => {
       const result = await setTableActive(table.id, next);
-      reportResult(toast, result, `${next ? "เปิด" : "ปิด"}ใช้งานโต๊ะ ${table.name} แล้ว`);
+      if (result.affected) setAffected({ affected: result.affected, table });
+      else reportResult(toast, result, `${next ? "เปิด" : "ปิด"}ใช้งานโต๊ะ ${table.name} แล้ว`);
       setPendingId(undefined);
     });
+  }
+
+  async function confirmDeactivate(): Promise<ActionState> {
+    if (!affected) return {};
+    const result = await setTableActive(affected.table.id, false, true);
+    reportResult(toast, result, `ปิดใช้งานโต๊ะ ${affected.table.name} แล้ว`);
+    return result;
   }
 
   return (
@@ -112,6 +122,8 @@ export function TablesManager({ tables, maxQuota }: { tables: Table[]; maxQuota:
         </table>
       </div>
 
+      <AffectedDialog affected={affected?.affected ?? null} onClose={() => setAffected(null)} onConfirm={confirmDeactivate} />
+
       <Modal
         open={dialog !== null}
         onClose={() => setDialog(null)}
@@ -130,16 +142,35 @@ export function TablesManager({ tables, maxQuota }: { tables: Table[]; maxQuota:
 
 function TableForm({ table, onDone }: { table?: Table; onDone: () => void }) {
   const toast = useToast();
+  const [lastForm, setLastForm] = useState<FormData | null>(null);
   const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, formData) => {
     const result = table ? await updateTable(table.id, prev, formData) : await createTable(prev, formData);
     const name = String(formData.get("name") ?? "").trim();
-    reportResult(toast, result, table ? `บันทึกโต๊ะ ${name} แล้ว` : `เพิ่มโต๊ะ ${name} แล้ว`);
+    if (result.affected) setLastForm(formData);
+    else reportResult(toast, result, table ? `บันทึกโต๊ะ ${name} แล้ว` : `เพิ่มโต๊ะ ${name} แล้ว`);
     if (result.ok) onDone();
     return { ...result, values: submittedValues(formData) };
   }, {});
+  const [dismissed, setDismissed] = useState<ActionState | null>(null);
+
+  async function confirmSave(): Promise<ActionState> {
+    if (!table || !lastForm) return {};
+    const formData = new FormData();
+    for (const [key, value] of lastForm.entries()) formData.append(key, value);
+    formData.set("confirmed", "1");
+    const result = await updateTable(table.id, {}, formData);
+    reportResult(toast, result, `บันทึกโต๊ะ ${table.name} แล้ว`);
+    if (result.ok) onDone();
+    return result;
+  }
 
   return (
     <form action={action} noValidate className="flex flex-col gap-4">
+      <AffectedDialog
+        affected={state.affected && dismissed !== state ? state.affected : null}
+        onClose={() => setDismissed(state)}
+        onConfirm={confirmSave}
+      />
       <FormError message={state.error} />
       <Field id="table-name" label="ชื่อโต๊ะ" error={state.fieldErrors?.name}>
         <input
