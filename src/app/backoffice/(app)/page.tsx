@@ -54,7 +54,7 @@ async function HomeContent() {
       </section>
 
       <p className="rounded-card bg-rimlay-shallow px-5 py-4 text-sm text-rimlay-deep">
-        เมนูอื่นจะเปิดใช้ตามลำดับ Phase: รายการจอง (Phase 2), ตั้งค่าร้านและผู้ใช้งาน (Phase 5), ปฏิทินและ Dashboard (Phase 6)
+        เมนูที่เหลือจะเปิดใช้ตามลำดับ Phase: รายการจองและปฏิทิน (Phase 2), Dashboard (Phase 3)
       </p>
     </div>
   );

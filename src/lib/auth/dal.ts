@@ -27,12 +27,13 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, display_name, email, role")
+    .select("id, username, display_name, email, role, deleted_at")
     .eq("id", userId)
     .maybeSingle();
 
-  // An auth user without a profile isn't a back-office account; drop the session.
-  if (!profile) {
+  // An auth user without a profile isn't a back-office account, and a soft-deleted one must
+  // lose access immediately even though their JWT is still valid; drop the session.
+  if (!profile || profile.deleted_at) {
     await supabase.auth.signOut();
     redirect(BACKOFFICE_LOGIN);
   }

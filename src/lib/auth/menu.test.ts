@@ -23,8 +23,13 @@ describe("getMenuForRole", () => {
     expect(keys).toEqual(["home", "bookings", "calendar", "dashboard", "tables", "hours", "users"]);
   });
 
-  it("only exposes pages that exist in Phase 0", () => {
+  it("only exposes pages that exist so far (Phase 1)", () => {
     const available = getMenuForRole("admin").filter((m) => m.available).map((m) => m.key);
-    expect(available).toEqual(["home"]);
+    expect(available).toEqual(["home", "tables", "hours", "users"]);
+  });
+
+  it("keeps Phase 1 settings pages out of the staff menu", () => {
+    const staffAvailable = getMenuForRole("staff").filter((m) => m.available).map((m) => m.key);
+    expect(staffAvailable).toEqual(["home"]);
   });
 });

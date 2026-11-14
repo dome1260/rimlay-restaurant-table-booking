@@ -15,9 +15,61 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_hours: {
+        Row: {
+          close_time: string | null
+          is_open: boolean
+          open_time: string | null
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          close_time?: string | null
+          is_open?: boolean
+          open_time?: string | null
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          close_time?: string | null
+          is_open?: boolean
+          open_time?: string | null
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: []
+      }
+      dining_tables: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          seats: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          seats: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          seats?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
+          deleted_at: string | null
           display_name: string
           email: string
           id: string
@@ -27,6 +79,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           display_name: string
           email: string
           id: string
@@ -36,6 +89,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           display_name?: string
           email?: string
           id?: string
@@ -45,12 +99,44 @@ export type Database = {
         }
         Relationships: []
       }
+      special_holidays: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          holiday_date: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          holiday_date: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          holiday_date?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_holidays_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "staff" | "admin"

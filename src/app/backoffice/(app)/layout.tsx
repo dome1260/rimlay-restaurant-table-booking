@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { BottomNav, SidebarNav } from "@/components/backoffice/Nav";
@@ -30,13 +31,19 @@ async function Shell({ children }: { children: React.ReactNode }) {
           <SidebarNav items={menu} />
         </div>
         <div className="flex items-center gap-3 border-t border-rimlay-border px-2 pt-4">
-          <span className="flex size-9 items-center justify-center rounded-full bg-rimlay-shallow font-semibold text-rimlay-blue">
-            {initial.toUpperCase()}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">{profile.displayName}</div>
-            <div className="text-xs text-rimlay-driftwood">{ROLE_LABEL[profile.role]}</div>
-          </div>
+          <Link
+            href="/backoffice/profile"
+            aria-label="โปรไฟล์ของฉัน"
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-field py-1 hover:bg-rimlay-shallow"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-rimlay-shallow font-semibold text-rimlay-blue">
+              {initial.toUpperCase()}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{profile.displayName}</span>
+              <span className="block text-xs text-rimlay-driftwood">{ROLE_LABEL[profile.role]}</span>
+            </span>
+          </Link>
           <form action={logout}>
             <button
               type="submit"
@@ -55,15 +62,23 @@ async function Shell({ children }: { children: React.ReactNode }) {
             <LogoMark size={32} />
             <span className="font-wordmark text-xl font-bold text-rimlay-blue">rimlay</span>
           </span>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex h-11 items-center gap-2 rounded-field px-3 text-sm font-medium text-rimlay-driftwood hover:bg-rimlay-shallow"
+          <div className="flex items-center gap-1">
+            <Link
+              href="/backoffice/profile"
+              className="flex h-11 items-center rounded-field px-3 text-sm font-medium text-rimlay-driftwood hover:bg-rimlay-shallow"
             >
-              <LogoutIcon />
-              ออกจากระบบ
-            </button>
-          </form>
+              โปรไฟล์
+            </Link>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="flex h-11 items-center gap-2 rounded-field px-3 text-sm font-medium text-rimlay-driftwood hover:bg-rimlay-shallow"
+              >
+                <LogoutIcon />
+                ออกจากระบบ
+              </button>
+            </form>
+          </div>
         </header>
         <main className="flex-1 px-4 pb-28 pt-6 sm:px-8 md:pb-10 md:pt-10">{children}</main>
       </div>

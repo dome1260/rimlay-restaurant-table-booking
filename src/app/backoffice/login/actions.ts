@@ -36,6 +36,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     .from("profiles")
     .select("email")
     .eq("username", username)
+    .is("deleted_at", null)
     .maybeSingle();
   if (!profile) return { username: typedUsername, error: INVALID_CREDENTIALS_MESSAGE };
 

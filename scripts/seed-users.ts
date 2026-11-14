@@ -24,7 +24,7 @@ type SeedUser = {
 };
 
 // TODO(before go-live): these are test accounts with a shared test password; replace
-// with real staff accounts and rotate the password once user management (Phase 5) exists.
+// with real staff accounts and rotate the password once user management (Phase 1) exists.
 const users: SeedUser[] = [
   { username: "admin01", displayName: "Admin 01", email: env("SEED_ADMIN_EMAIL"), role: "admin" },
   { username: "staff01", displayName: "Staff 01", email: env("SEED_STAFF_EMAIL"), role: "staff" },

@@ -67,7 +67,11 @@ export function SidebarNav({ items }: { items: MenuItem[] }) {
 
 export function BottomNav({ items }: { items: MenuItem[] }) {
   const pathname = usePathname();
-  const shown = items.slice(0, 4);
+  // Only pages that exist are reachable from the bar; showing "coming soon" items pushed
+  // the Admin pages out of the first four slots on phones.
+  // TODO(Phase 2/3): with 5+ available items (bookings, calendar, dashboard arrive) the bar
+  // needs a "more" sheet instead of silently dropping the rest.
+  const shown = items.filter((item) => item.available).slice(0, 4);
 
   return (
     <nav
@@ -77,14 +81,6 @@ export function BottomNav({ items }: { items: MenuItem[] }) {
     >
       {shown.map((item) => {
         const base = "flex flex-col items-center justify-center gap-0.5 text-[11px]";
-        if (!item.available) {
-          return (
-            <span key={item.key} aria-disabled="true" className={`${base} text-rimlay-driftwood/60`}>
-              <MenuIcon name={item.icon} size={22} />
-              {item.label}
-            </span>
-          );
-        }
         const active = pathname === item.href;
         return (
           <Link

@@ -21,10 +21,9 @@ const MENU: MenuItem[] = [
   { key: "calendar", label: "ปฏิทินการจอง", href: "/backoffice/calendar", icon: "calendar", group: "frontdesk", requiredRole: "staff", available: false },
   // TODO(Phase 3): dashboard.
   { key: "dashboard", label: "Dashboard", href: "/backoffice/dashboard", icon: "chart", group: "admin", requiredRole: "admin", available: false },
-  // TODO(Phase 1): admin settings pages.
-  { key: "tables", label: "จัดการโต๊ะ", href: "/backoffice/tables", icon: "tables", group: "admin", requiredRole: "admin", available: false },
-  { key: "hours", label: "เวลาทำการ / วันหยุด", href: "/backoffice/hours", icon: "clock", group: "admin", requiredRole: "admin", available: false },
-  { key: "users", label: "ผู้ใช้งาน", href: "/backoffice/users", icon: "users", group: "admin", requiredRole: "admin", available: false },
+  { key: "tables", label: "จัดการโต๊ะ", href: "/backoffice/tables", icon: "tables", group: "admin", requiredRole: "admin", available: true },
+  { key: "hours", label: "เวลาทำการ / วันหยุด", href: "/backoffice/hours", icon: "clock", group: "admin", requiredRole: "admin", available: true },
+  { key: "users", label: "ผู้ใช้งาน", href: "/backoffice/users", icon: "users", group: "admin", requiredRole: "admin", available: true },
 ];
 
 export function getMenuForRole(role: AppRole): MenuItem[] {

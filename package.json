@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx scripts/seed-users.ts",
+    "seed:store": "tsx scripts/seed-store.ts",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
