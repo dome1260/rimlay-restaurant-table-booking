@@ -3,10 +3,13 @@ import type { BookingChannel } from "./status";
 
 // 'cutoff': web / phone-in close 15 min before the slot (System Rule 6).
 // 'walkin': no cutoff, but the slot must be the current one or later.
-// 'none': Staff edits and cancellations.
-export type TimeRule = "cutoff" | "walkin" | "none";
+// 'edit': Staff edits skip the cutoff, but can't move a booking to a slot whose no-show time
+// (start + 15 min) has passed, or the scheduled job would close it straight away.
+export type TimeRule = "cutoff" | "walkin" | "edit";
 
 export const CUTOFF_MINUTES = 15;
+// SYS-03: a "waiting" booking is closed by the system this long after its start.
+export const NO_SHOW_MINUTES = 15;
 
 export function timeRuleFor(channel: BookingChannel): TimeRule {
   return channel === "walk_in" ? "walkin" : "cutoff";
@@ -43,11 +46,11 @@ function absoluteMinutes(date: string, minutes: number): number {
 }
 
 export function isSlotBookable(date: string, slot: string, now: Date, rule: TimeRule): boolean {
-  if (rule === "none") return true;
   const current = bangkokNow(now);
   const nowAbs = absoluteMinutes(current.date, current.minutes);
   const slotAbs = absoluteMinutes(date, toMinutes(slot));
   if (rule === "cutoff") return slotAbs - CUTOFF_MINUTES >= nowAbs;
+  if (rule === "edit") return slotAbs + NO_SHOW_MINUTES > nowAbs;
   return slotAbs + SLOT_MINUTES > nowAbs;
 }
 

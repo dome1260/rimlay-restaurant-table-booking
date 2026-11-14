@@ -58,9 +58,15 @@ describe("walk-in rule (TC-054)", () => {
   });
 });
 
-describe("staff edits (rule none)", () => {
-  it("is never blocked by time", () => {
-    expect(isSlotBookable("2026-11-14", "11:00", at("21:00"), "none")).toBe(true);
+describe("staff edits (rule edit)", () => {
+  it("skips the 15 minute cutoff", () => {
+    expect(isSlotBookable("2026-11-14", "18:00", at("17:55"), "edit")).toBe(true);
+    expect(isSlotBookable("2026-11-14", "18:00", at("18:14"), "edit")).toBe(true);
+  });
+
+  it("refuses a slot whose no-show time has passed (the job would close it at once)", () => {
+    expect(isSlotBookable("2026-11-14", "18:00", at("18:15"), "edit")).toBe(false);
+    expect(isSlotBookable("2026-11-14", "11:00", at("21:00"), "edit")).toBe(false);
   });
 });
 

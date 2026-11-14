@@ -18,10 +18,14 @@ export function addDays(date: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Same as Postgres `date + interval 'n months'`: a day the target month doesn't have becomes its
+// last day (01-31 + 1 month = 02-28), so the UI's "up to 1 month ahead" matches booking_validate.
 export function addMonths(date: string, months: number): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCMonth(d.getUTCMonth() + months);
-  return d.toISOString().slice(0, 10);
+  const [y, m, day] = date.split("-").map(Number);
+  const target = new Date(Date.UTC(y, m - 1 + months, 1));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(day, lastDay));
+  return target.toISOString().slice(0, 10);
 }
 
 // Event timestamps for the history list, always in Bangkok time.

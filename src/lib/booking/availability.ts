@@ -43,7 +43,7 @@ export async function loadSlotOptions(params: {
     return { slots: [], reason: "ร้านไม่เปิดทำการในวันที่เลือก" };
   }
 
-  const rule: TimeRule = excludeId ? "none" : timeRuleFor(channel ?? "phone_in");
+  const rule: TimeRule = excludeId ? "edit" : timeRuleFor(channel ?? "phone_in");
   const all = generateSlots(trimSeconds(hours.open_time), trimSeconds(hours.close_time));
   const timely = all.filter((slot) => isSlotBookable(date, slot, now, rule));
   const bookings: LoadBooking[] = (bookingsRes.data ?? []).map((b) => ({ ...b, start_time: trimSeconds(b.start_time) }));

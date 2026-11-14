@@ -12,4 +12,12 @@ describe("format", () => {
     expect(addDays("2026-11-01", -1)).toBe("2026-10-31");
     expect(addMonths("2026-11-14", 1)).toBe("2026-12-14");
   });
+
+  it("clamps addMonths to the month's last day like Postgres date + interval", () => {
+    expect(addMonths("2027-01-31", 1)).toBe("2027-02-28");
+    expect(addMonths("2028-01-31", 1)).toBe("2028-02-29");
+    expect(addMonths("2026-10-31", 1)).toBe("2026-11-30");
+    expect(addMonths("2026-12-31", 1)).toBe("2027-01-31");
+    expect(addMonths("2027-03-31", -1)).toBe("2027-02-28");
+  });
 });
