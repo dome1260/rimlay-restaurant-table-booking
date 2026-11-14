@@ -27,8 +27,8 @@
 | 0 | Login หลังบ้าน + หน้าหลัก 1 หน้า, profiles + RLS, brand + โลโก้ | BO-01 | เสร็จ |
 | 1 | หลังบ้าน ส่วนที่ 1 — ตั้งค่าร้าน + ผู้ใช้: โต๊ะ, เวลาทำการ, วันหยุดพิเศษ, จัดการผู้ใช้, ลบบัญชีตัวเอง | ADM-01, 02, 03, 06, 07 | เสร็จ (ผลทดสอบบันทึกในชีตแล้ว) |
 | 2A | หลังบ้าน ส่วนที่ 2 (ครึ่งแรก) — schema การจอง, logic slot/quota/EDD (RPC ใน DB), รายการจอง, สร้างคิว walk-in/phone-in, หน้ารายละเอียด + ประวัติสถานะ, จัดโต๊ะ/ปิดโต๊ะ/ยกเลิก/แก้ไข, เวลาจำลอง (dev), email แบบ fallback (บันทึกลง email_outbox) | SYS-01, 02, 05, STF-01–08, ADM-05 | เสร็จ (commit 38176b5) |
-| 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง (รอ App Password), เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | เสร็จ (commit f510ed5) |
-| 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | โค้ดเสร็จ รอ commit |
+| 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง, เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | เสร็จ (commit f510ed5) |
+| 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | เสร็จ (commit ecfe52c) |
 | 4 | ลูกค้าจองโต๊ะ (C1–C6) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | |
 | 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | |
 | 6 | E2E ทั้งระบบ + deploy Vercel | — | |
@@ -64,6 +64,15 @@
 - `POST /api/jobs/emails` (header `Authorization: Bearer $CRON_SECRET`) เรียก worker ได้ — `CRON_SECRET` คุณโดมใส่เองใน `.env.local`
 - TODO(Phase 6): หลัง deploy ให้ pg_cron + pg_net เรียก route นี้ทุกนาที (เก็บ URL/secret ใน Supabase Vault) ตอนนี้ไม่มีอะไรเรียกอัตโนมัติ — อีเมล no-show ที่ค้างจะไม่ถูกส่งจนกว่าจะกดปุ่ม "รันงานตั้งเวลา" (dev) หรือเรียก route เอง
 - โหมด dev: ปุ่ม "รันงานตั้งเวลา" บนแถบเวลาจำลองรัน `run_booking_closures` ด้วยเวลาจำลองแล้วส่งอีเมลที่ค้าง (cron จริงรู้เฉพาะเวลาจริง)
+
+## Dashboard (Phase 3)
+- `/backoffice/dashboard` เฉพาะ Admin: `?view=week|year&at=` — นับตามวันนัด (`booking_date`), สัปดาห์อาทิตย์–เสาร์, ปีมี 12 เดือน, "ถัดไป" ไม่เกินช่วงปัจจุบัน
+- logic รวมผลอยู่ใน `src/lib/booking/dashboard.ts` (pure, มี unit test); กราฟเป็นแท่ง CSS ไม่ใช้ library
+
+## สถานะปัจจุบัน
+- Phase 0–3 เสร็จและ push ขึ้น GitHub แล้ว (ล่าสุด ecfe52c); หลังบ้านครบทุกฟีเจอร์
+- ถัดไป: Phase 4 (ฝั่งลูกค้าจองโต๊ะ) — ต้องเข้า plan mode ก่อน
+- ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; เคสฝั่งลูกค้ารอ Phase 4/5; Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
 
 ## Conventions
 
