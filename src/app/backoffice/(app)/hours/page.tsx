@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { getNow } from "@/lib/clock";
 import { bangkokToday } from "@/lib/store/schema";
 import { trimSeconds } from "@/lib/store/quota";
 import { HoursForm, type DayState } from "./hours-form";
@@ -20,7 +21,7 @@ export default function HoursPage() {
 async function HoursContent() {
   await requireRole("admin");
   const supabase = await createClient();
-  const today = bangkokToday();
+  const today = bangkokToday(await getNow());
 
   const [{ data: hours }, { data: holidays }] = await Promise.all([
     supabase.from("business_hours").select("weekday, is_open, open_time, close_time"),

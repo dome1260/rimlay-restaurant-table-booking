@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { isValidDate } from "./format";
 import { normalizePhone, PHONE_PATTERN } from "./phone";
 
-const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "กรุณาเลือกวันที่");
+const date = z.string().refine(isValidDate, "กรุณาเลือกวันที่");
 const time = z.string().regex(/^\d{2}:\d{2}$/, "กรุณาเลือกเวลา");
 const party = z.coerce
   .number({ error: "กรุณาเลือกจำนวนที่นั่ง" })

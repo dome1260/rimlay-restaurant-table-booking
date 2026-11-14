@@ -6,17 +6,20 @@ import { UsersManager } from "./users-manager";
 
 export const metadata: Metadata = { title: "ผู้ใช้งาน" };
 
-export default function UsersPage() {
+type Search = Promise<Record<string, string | string[] | undefined>>;
+
+export default function UsersPage(props: PageProps<"/backoffice/users">) {
   return (
     <Suspense fallback={<p className="text-rimlay-driftwood">กำลังโหลดรายชื่อผู้ใช้…</p>}>
-      <UsersContent />
+      <UsersContent searchParams={props.searchParams as Search} />
     </Suspense>
   );
 }
 
-async function UsersContent() {
+async function UsersContent({ searchParams }: { searchParams: Search }) {
   await requireRole("admin");
   const me = await getCurrentProfile();
+  const { page } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
@@ -28,6 +31,7 @@ async function UsersContent() {
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <UsersManager
         meId={me.id}
+        page={Array.isArray(page) ? page[0] : page}
         users={(data ?? []).map((u) => ({
           id: u.id,
           username: u.username,

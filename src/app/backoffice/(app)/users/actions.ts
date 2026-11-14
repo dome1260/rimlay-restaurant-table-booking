@@ -65,7 +65,7 @@ export async function updateUser(id: string, _prev: ActionState, formData: FormD
   const admin = createAdminClient();
   const { data: target } = await admin
     .from("profiles")
-    .select("id, role, email")
+    .select("id, role, email, display_name")
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
@@ -73,17 +73,16 @@ export async function updateUser(id: string, _prev: ActionState, formData: FormD
 
   if (!canChangeRole(target, role, await countActiveAdmins())) return { fieldErrors: { role: LAST_ADMIN_MESSAGE } };
 
-  if (email !== target.email || password) {
-    const { error: authError } = await admin.auth.admin.updateUserById(id, {
-      ...(email !== target.email ? { email, email_confirm: true } : {}),
-      ...(password ? { password } : {}),
-    });
-    if (authError) {
-      if (authError.code === "email_exists") return { fieldErrors: { email: "อีเมลนี้ถูกใช้แล้ว" } };
-      return { error: GENERIC };
-    }
+  // Supabase Auth answers a duplicate email on update with a bare 500 (no email_exists code), so
+  // check first. Every auth user has a profile (soft-deleted ones keep theirs), so this covers all.
+  if (email.toLowerCase() !== target.email.toLowerCase()) {
+    const escaped = email.replace(/[\\%_]/g, (c) => `\\${c}`);
+    const { data: clash } = await admin.from("profiles").select("id").ilike("email", escaped).neq("id", id).limit(1);
+    if (clash && clash.length > 0) return { fieldErrors: { email: "อีเมลนี้ถูกใช้แล้ว" } };
   }
 
+  // Profile first: the last-admin trigger can still refuse it, and login looks the email up in
+  // profiles, so Auth must never end up holding an email the profile doesn't have.
   const { error } = await admin
     .from("profiles")
     .update({ display_name: displayName, email, role })
@@ -91,6 +90,22 @@ export async function updateUser(id: string, _prev: ActionState, formData: FormD
   if (error) {
     if (error.message.includes("last_active_admin")) return { fieldErrors: { role: LAST_ADMIN_MESSAGE } };
     return { error: GENERIC };
+  }
+
+  if (email !== target.email || password) {
+    const { error: authError } = await admin.auth.admin.updateUserById(id, {
+      ...(email !== target.email ? { email, email_confirm: true } : {}),
+      ...(password ? { password } : {}),
+    });
+    if (authError) {
+      const { error: revertError } = await admin
+        .from("profiles")
+        .update({ display_name: target.display_name, email: target.email, role: target.role })
+        .eq("id", id);
+      if (revertError) console.error("updateUser: profile revert failed", id, revertError.message);
+      if (authError.code === "email_exists") return { fieldErrors: { email: "อีเมลนี้ถูกใช้แล้ว" } };
+      return { error: GENERIC };
+    }
   }
 
   revalidatePath(PATH);

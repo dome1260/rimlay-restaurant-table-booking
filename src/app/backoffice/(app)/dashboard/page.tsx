@@ -14,6 +14,7 @@ import {
   type DashBooking,
   type DashView,
 } from "@/lib/booking/dashboard";
+import { isValidDate } from "@/lib/booking/format";
 import { bangkokNow } from "@/lib/booking/slots";
 import { CHANNEL_LABEL } from "@/lib/booking/status";
 import { getNow } from "@/lib/clock";
@@ -62,7 +63,7 @@ async function DashboardContent({ searchParams }: { searchParams: Search }) {
 
   const view: DashView = one(params.view) === "year" ? "year" : "week";
   const rawAt = one(params.at);
-  const at = /^\d{4}-\d{2}-\d{2}$/.test(rawAt) && rawAt <= today ? rawAt : today;
+  const at = isValidDate(rawAt) && rawAt <= today ? rawAt : today;
   const period = periodFor(view, at);
 
   const supabase = await createClient();

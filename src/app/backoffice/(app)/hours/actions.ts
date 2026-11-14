@@ -5,7 +5,7 @@ import { requireRole } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { fieldErrorsFrom, success, type ActionState } from "@/lib/action-state";
 import { affectedByHoliday, affectedByHours, describeHoursChange, type DayHours } from "@/lib/booking/affected";
-import { loadOpenBookings } from "@/lib/booking/affected-query";
+import { AFFECTED_LOAD_ERROR, loadOpenBookings } from "@/lib/booking/affected-query";
 import { formatThaiDate } from "@/lib/booking/format";
 import { getNow } from "@/lib/clock";
 import { trimSeconds } from "@/lib/store/quota";
@@ -52,7 +52,9 @@ export async function saveBusinessHours(_prev: ActionState, formData: FormData):
     }));
     const after: DayHours[] = parsed.data.map((d) => ({ weekday: d.weekday, isOpen: d.isOpen, open: d.open, close: d.close }));
     const today = bangkokToday(await getNow());
-    const bookings = affectedByHours(await loadOpenBookings(today), before, after, today);
+    const open = await loadOpenBookings(today);
+    if (!open) return { error: AFFECTED_LOAD_ERROR };
+    const bookings = affectedByHours(open, before, after, today);
     if (bookings.length > 0) return { affected: { summary: describeHoursChange(before, after), bookings } };
   }
 
@@ -70,12 +72,15 @@ export async function addHoliday(_prev: ActionState, formData: FormData): Promis
     note: String(formData.get("note") ?? "") || undefined,
   });
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error) };
-  if (isPastDate(parsed.data.date)) return { fieldErrors: { date: "เลือกวันที่ผ่านมาแล้วไม่ได้" } };
+  const now = await getNow();
+  if (isPastDate(parsed.data.date, now)) return { fieldErrors: { date: "เลือกวันที่ผ่านมาแล้วไม่ได้" } };
 
   const supabase = await createClient();
   if (formData.get("confirmed") !== "1") {
-    const today = bangkokToday(await getNow());
-    const bookings = affectedByHoliday(await loadOpenBookings(today), parsed.data.date, today);
+    const today = bangkokToday(now);
+    const open = await loadOpenBookings(today);
+    if (!open) return { error: AFFECTED_LOAD_ERROR };
+    const bookings = affectedByHoliday(open, parsed.data.date, today);
     if (bookings.length > 0) {
       return { affected: { summary: `เพิ่มวันหยุดพิเศษ ${formatThaiDate(parsed.data.date)}`, bookings } };
     }

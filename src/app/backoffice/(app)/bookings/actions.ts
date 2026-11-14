@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/dal";
 import { fieldErrorsFrom, success, type ActionState } from "@/lib/action-state";
 import { loadSlotOptions, type SlotOptions } from "@/lib/booking/availability";
 import { rpcErrorMessage } from "@/lib/booking/errors";
+import { isValidDate } from "@/lib/booking/format";
 import { CHANNEL_LABEL, ACTIVE_STATUSES, type BookingChannel, type BookingStatus } from "@/lib/booking/status";
 import { createBookingSchema, editBookingSchema } from "@/lib/booking/schema";
 import { getNow } from "@/lib/clock";
@@ -193,7 +194,7 @@ export async function getSlotOptions(input: {
   excludeId?: string;
 }): Promise<SlotOptions> {
   await requireRole("staff");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date) || !(input.party >= 1 && input.party <= 8)) {
+  if (!isValidDate(input.date) || !(input.party >= 1 && input.party <= 8)) {
     return { slots: [], reason: "กรุณาเลือกวันที่และจำนวนที่นั่ง" };
   }
   return loadSlotOptions({ ...input, now: await getNow() });

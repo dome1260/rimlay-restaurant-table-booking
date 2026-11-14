@@ -3,6 +3,8 @@
 import { useActionState, useState, useTransition } from "react";
 import { AffectedDialog } from "@/components/backoffice/AffectedDialog";
 import { Modal } from "@/components/backoffice/Modal";
+import { Pagination } from "@/components/backoffice/Pagination";
+import { paginate } from "@/lib/pagination";
 import { Switch } from "@/components/backoffice/Switch";
 import { reportResult, useToast } from "@/components/backoffice/Toast";
 import {
@@ -19,7 +21,8 @@ import { createTable, setTableActive, updateTable } from "./actions";
 
 type Table = { id: string; name: string; seats: number; is_active: boolean };
 
-export function TablesManager({ tables, maxQuota }: { tables: Table[]; maxQuota: number }) {
+export function TablesManager({ tables, maxQuota, page }: { tables: Table[]; maxQuota: number; page?: string }) {
+  const paged = paginate(tables, page);
   const [dialog, setDialog] = useState<{ mode: "create" } | { mode: "edit"; table: Table } | null>(null);
   const [pendingId, setPendingId] = useState<string>();
   const [affected, setAffected] = useState<{ affected: NonNullable<ActionState["affected"]>; table: Table } | null>(null);
@@ -89,7 +92,7 @@ export function TablesManager({ tables, maxQuota }: { tables: Table[]; maxQuota:
                 </td>
               </tr>
             ) : null}
-            {tables.map((table) => (
+            {paged.items.map((table) => (
               <tr key={table.id} className="border-b border-rimlay-border/60 last:border-0">
                 <td className="px-5 py-3 font-bold">{table.name}</td>
                 <td className="px-5 py-3">{table.seats} ที่นั่ง</td>
@@ -121,6 +124,7 @@ export function TablesManager({ tables, maxQuota }: { tables: Table[]; maxQuota:
           </tbody>
         </table>
       </div>
+      <Pagination {...paged} unit="โต๊ะ" href={(p) => (p > 1 ? `/backoffice/tables?page=${p}` : "/backoffice/tables")} />
 
       <AffectedDialog affected={affected?.affected ?? null} onClose={() => setAffected(null)} onConfirm={confirmDeactivate} />
 

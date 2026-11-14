@@ -39,7 +39,7 @@ export async function sendBookingEmail(bookingId: string, kind: BookingEmailKind
 
     const admin = createAdminClient();
     const configured = isEmailConfigured();
-    const { data: row } = await admin
+    const { data: row, error: insertError } = await admin
       .from("email_outbox")
       .insert({
         booking_id: bookingId,
@@ -53,16 +53,21 @@ export async function sendBookingEmail(bookingId: string, kind: BookingEmailKind
       })
       .select("id")
       .single();
-    if (!configured || !row) return;
+    if (insertError) console.error("sendBookingEmail: outbox insert failed", bookingId, kind, insertError.message);
+    if (!configured) return;
+
+    // Without an outbox row the mail is still sent (the customer matters more than the log).
+    const mark = async (fields: { status: "sent" | "failed"; error?: string }) => {
+      if (row) await admin.from("email_outbox").update(fields).eq("id", row.id);
+    };
 
     try {
       await deliverEmail(mail.to, mail.subject, mail.body, mail.html);
-      await admin.from("email_outbox").update({ status: "sent" }).eq("id", row.id);
+      await mark({ status: "sent" });
     } catch (error) {
-      await admin
-        .from("email_outbox")
-        .update({ status: "failed", error: error instanceof Error ? error.message.slice(0, 300) : "send failed" })
-        .eq("id", row.id);
+      const message = error instanceof Error ? error.message.slice(0, 300) : "send failed";
+      if (!row) console.error("sendBookingEmail: delivery failed", bookingId, kind, message);
+      await mark({ status: "failed", error: message });
     }
   } catch (error) {
     console.error("sendBookingEmail failed", error);

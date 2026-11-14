@@ -89,4 +89,11 @@ describe("minutesPastAppointment", () => {
     expect(minutesPastAppointment("2026-11-14", "12:00", at("12:08"))).toBe(8);
     expect(minutesPastAppointment("2026-11-14", "12:00", at("11:50"))).toBe(-10);
   });
+
+  it("counts from creation for a booking made after its slot started (walk-in)", () => {
+    const created = at("12:20").toISOString();
+    expect(minutesPastAppointment("2026-11-14", "12:00", at("12:25"), created)).toBe(5);
+    // Booked in advance: the appointment is the later of the two.
+    expect(minutesPastAppointment("2026-11-14", "12:00", at("12:08"), at("09:00").toISOString())).toBe(8);
+  });
 });

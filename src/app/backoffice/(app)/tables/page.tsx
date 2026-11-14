@@ -7,23 +7,27 @@ import { TablesManager } from "./tables-manager";
 
 export const metadata: Metadata = { title: "จัดการโต๊ะ" };
 
-export default function TablesPage() {
+type Search = Promise<Record<string, string | string[] | undefined>>;
+
+export default function TablesPage(props: PageProps<"/backoffice/tables">) {
   return (
     <Suspense fallback={<p className="text-rimlay-driftwood">กำลังโหลดข้อมูลโต๊ะ…</p>}>
-      <TablesContent />
+      <TablesContent searchParams={props.searchParams as Search} />
     </Suspense>
   );
 }
 
-async function TablesContent() {
+async function TablesContent({ searchParams }: { searchParams: Search }) {
   await requireRole("admin");
+  const { page } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.from("dining_tables").select("id, name, seats, is_active");
   const tables = [...(data ?? [])].sort((a, b) => a.name.localeCompare(b.name, "th", { numeric: true }));
 
+  // Every table is sent so the quota / active counts stay totals; the list itself is paged.
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <TablesManager tables={tables} maxQuota={maxQuota(tables)} />
+      <TablesManager tables={tables} maxQuota={maxQuota(tables)} page={Array.isArray(page) ? page[0] : page} />
     </div>
   );
 }

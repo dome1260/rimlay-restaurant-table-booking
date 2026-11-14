@@ -54,6 +54,7 @@ describe("holidays", () => {
     expect(holidaySchema.safeParse({ date: "2026-12-31" }).success).toBe(true);
     expect(holidaySchema.safeParse({ date: "31/12/2026" }).success).toBe(false);
     expect(holidaySchema.safeParse({ date: "2026-02-31x" }).success).toBe(false);
+    expect(holidaySchema.safeParse({ date: "2026-02-31" }).success).toBe(false);
     expect(holidaySchema.safeParse({ date: "2026-12-31", note: "x".repeat(101) }).success).toBe(false);
   });
   it("uses Bangkok time for today", () => {

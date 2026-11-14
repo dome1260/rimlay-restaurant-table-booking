@@ -60,8 +60,16 @@ export function currentSlot(now: Date): string {
   return formatMinutes(Math.floor(minutes / SLOT_MINUTES) * SLOT_MINUTES);
 }
 
-// How many minutes past the appointment a waiting booking is (negative = not yet).
-export function minutesPastAppointment(date: string, startTime: string, now: Date): number {
+// How many minutes past the appointment a waiting booking is (negative = not yet). With
+// createdAt, counted like the no-show job: from the later of the appointment and creation, so a
+// walk-in added mid-slot doesn't look late from the start.
+export function minutesPastAppointment(date: string, startTime: string, now: Date, createdAt?: string): number {
   const current = bangkokNow(now);
-  return absoluteMinutes(current.date, current.minutes) - absoluteMinutes(date, toMinutes(startTime));
+  const nowAbs = absoluteMinutes(current.date, current.minutes);
+  let fromAbs = absoluteMinutes(date, toMinutes(startTime));
+  if (createdAt) {
+    const created = bangkokNow(new Date(createdAt));
+    fromAbs = Math.max(fromAbs, absoluteMinutes(created.date, created.minutes));
+  }
+  return nowAbs - fromAbs;
 }

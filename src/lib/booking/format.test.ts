@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { addDays, addMonths, formatThaiDate } from "./format";
+import { addDays, addMonths, formatThaiDate, isValidDate } from "./format";
 
 describe("format", () => {
+  it("accepts only real calendar dates", () => {
+    expect(isValidDate("2026-11-15")).toBe(true);
+    expect(isValidDate("2028-02-29")).toBe(true);
+    expect(isValidDate("2027-02-29")).toBe(false);
+    expect(isValidDate("2026-02-31")).toBe(false);
+    expect(isValidDate("2026-13-01")).toBe(false);
+    expect(isValidDate("2026-99-99")).toBe(false);
+    expect(isValidDate("2026-1-5")).toBe(false);
+    expect(isValidDate("")).toBe(false);
+  });
+
   it("formats Thai dates with Buddhist year", () => {
     expect(formatThaiDate("2026-11-10")).toBe("อ. 10 พ.ย. 2569");
     expect(formatThaiDate("2026-11-15")).toBe("อา. 15 พ.ย. 2569");

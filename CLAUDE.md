@@ -73,6 +73,7 @@
 - Phase 0–3 เสร็จและ push ขึ้น GitHub แล้ว (ล่าสุด ecfe52c); หลังบ้านครบทุกฟีเจอร์
 - ถัดไป: Phase 4 (ฝั่งลูกค้าจองโต๊ะ) — ต้องเข้า plan mode ก่อน
 - ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; เคสฝั่งลูกค้ารอ Phase 4/5; Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
+- TODO(Phase 6): dev กับ production ยังใช้ Supabase project เดียวกัน — ก่อน go-live แยก project ให้ production แล้วตั้ง `PRODUCTION_SUPABASE_URL` เพื่อให้เวลาจำลอง / ปุ่มรันงานปิดตัวเองเมื่อแอปในเครื่องชี้ไป production (`src/lib/dev-tools.ts`)
 
 ## Conventions
 

@@ -9,6 +9,7 @@ import { getMenuForRole } from "@/lib/auth/menu";
 import { ROLE_LABEL } from "@/lib/auth/roles";
 import { getNow } from "@/lib/clock";
 import { SIM_CLOCK_COOKIE } from "@/lib/clock-core";
+import { devToolsAllowed } from "@/lib/dev-tools";
 import { bangkokNow } from "@/lib/booking/slots";
 import { logout } from "../login/actions";
 import { DevClock } from "./dev-clock";
@@ -27,7 +28,7 @@ async function Shell({ children }: { children: React.ReactNode }) {
   const initial = profile.displayName.trim().charAt(0) || profile.username.charAt(0);
 
   // Development-only clock control; production never renders it or reads the cookie.
-  const isDev = process.env.NODE_ENV === "development";
+  const isDev = devToolsAllowed();
   let devClock: { nowLocal: string; simulated: boolean } | null = null;
   if (isDev) {
     const now = await getNow();

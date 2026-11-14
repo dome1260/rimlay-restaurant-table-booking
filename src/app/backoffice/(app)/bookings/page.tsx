@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/dal";
-import { addDays, addMonths, formatThaiDate } from "@/lib/booking/format";
+import { addDays, addMonths, formatThaiDate, isValidDate } from "@/lib/booking/format";
 import { formatPhone, normalizePhone } from "@/lib/booking/phone";
 import { bangkokNow, minutesPastAppointment } from "@/lib/booking/slots";
 import { CHANNEL_LABEL, type BookingChannel, type BookingStatus } from "@/lib/booking/status";
@@ -10,6 +10,8 @@ import { getNow } from "@/lib/clock";
 import { trimSeconds } from "@/lib/store/quota";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader, inputClass, secondaryButton } from "@/components/backoffice/ui";
+import { Pagination } from "@/components/backoffice/Pagination";
+import { paginate } from "@/lib/pagination";
 import { CreateBookingButton, NextActionButton } from "./booking-controls";
 import { StatusPill } from "./status-pill";
 
@@ -45,7 +47,7 @@ async function BookingsContent({ searchParams }: { searchParams: Search }) {
   const today = bangkokNow(now).date;
 
   const rawDate = one(params.date);
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : today;
+  const date = isValidDate(rawDate) ? rawDate : today;
   const q = one(params.q).trim();
   const channelFilter = one(params.channel);
   // Default: newest created first. The user can cycle to appointment time desc, then asc.
@@ -56,7 +58,7 @@ async function BookingsContent({ searchParams }: { searchParams: Search }) {
   const supabase = await createClient();
   const query = supabase
     .from("bookings")
-    .select("id, start_time, party_size, customer_name, phone, channel, status, booking_tables(dining_tables(name))")
+    .select("id, start_time, party_size, customer_name, phone, channel, status, created_at, booking_tables(dining_tables(name))")
     .eq("booking_date", date);
   const { data } = await (sort === "created"
     ? query.order("created_at", { ascending: false })
@@ -68,8 +70,13 @@ async function BookingsContent({ searchParams }: { searchParams: Search }) {
     if (!q) return true;
     return b.customer_name.toLowerCase().includes(q.toLowerCase()) || (digits.length > 0 && b.phone.includes(digits));
   });
-  const rows = filtered.filter((b) => tab.match(b.status));
+  const paged = paginate(
+    filtered.filter((b) => tab.match(b.status)),
+    one(params.page),
+  );
+  const rows = paged.items;
 
+  // Changing the date, filter, tab or sort starts again from page 1 (page is only kept when set).
   const href = (over: Record<string, string>) => {
     const next = new URLSearchParams();
     const merged: Record<string, string> = { date, q, channel: channelFilter, status: tab.key, sort: sort === "created" ? "" : sort, ...over };
@@ -104,7 +111,7 @@ async function BookingsContent({ searchParams }: { searchParams: Search }) {
           </Link>
         ) : null}
 
-        <form method="get" action="/backoffice/bookings" className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+        <form method="get" action="/backoffice/bookings" className="flex min-w-64 flex-1 flex-wrap items-center gap-3">
           <input type="hidden" name="date" value={date} />
           {tab.key !== "all" ? <input type="hidden" name="status" value={tab.key} /> : null}
           {sort !== "created" ? <input type="hidden" name="sort" value={sort} /> : null}
@@ -181,7 +188,7 @@ async function BookingsContent({ searchParams }: { searchParams: Search }) {
               </thead>
               <tbody>
                 {rows.map((b) => {
-                  const late = b.status === "waiting" ? minutesPastAppointment(date, trimSeconds(b.start_time), now) : 0;
+                  const late = b.status === "waiting" ? minutesPastAppointment(date, trimSeconds(b.start_time), now, b.created_at) : 0;
                   return (
                     <tr key={b.id} className="border-b border-rimlay-border/60 last:border-0" data-testid="booking-row">
                       <td className="px-4 py-3.5 align-top font-bold tabular-nums">{trimSeconds(b.start_time)}</td>
@@ -221,7 +228,7 @@ async function BookingsContent({ searchParams }: { searchParams: Search }) {
 
           <ul className="flex flex-col gap-3 xl:hidden">
             {rows.map((b) => {
-              const late = b.status === "waiting" ? minutesPastAppointment(date, trimSeconds(b.start_time), now) : 0;
+              const late = b.status === "waiting" ? minutesPastAppointment(date, trimSeconds(b.start_time), now, b.created_at) : 0;
               return (
                 <li key={b.id} className="flex flex-col gap-3 rounded-card bg-white p-4 shadow-soft" data-testid="booking-card">
                   <Link href={`/backoffice/bookings/${b.id}`} className="flex items-start gap-3">
@@ -243,7 +250,7 @@ async function BookingsContent({ searchParams }: { searchParams: Search }) {
           </ul>
         </>
       )}
-      <p className="text-xs text-rimlay-driftwood">แสดง {rows.length} คิว</p>
+      <Pagination {...paged} unit="คิว" href={(p) => href({ page: p > 1 ? String(p) : "" })} />
     </div>
   );
 }

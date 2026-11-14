@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import { ConfirmDialog } from "@/components/backoffice/ConfirmDialog";
 import { Modal } from "@/components/backoffice/Modal";
+import { Pagination } from "@/components/backoffice/Pagination";
+import { paginate } from "@/lib/pagination";
 import { reportResult, useToast } from "@/components/backoffice/Toast";
 import {
   dangerSmallButton,
@@ -24,7 +26,8 @@ type User = { id: string; username: string; displayName: string; email: string; 
 
 type DialogState = { mode: "create" } | { mode: "edit"; user: User } | { mode: "delete"; user: User } | null;
 
-export function UsersManager({ users, meId }: { users: User[]; meId: string }) {
+export function UsersManager({ users, meId, page }: { users: User[]; meId: string; page?: string }) {
+  const paged = paginate(users, page);
   const [dialog, setDialog] = useState<DialogState>(null);
   const toast = useToast();
   const close = () => setDialog(null);
@@ -53,7 +56,7 @@ export function UsersManager({ users, meId }: { users: User[]; meId: string }) {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => {
+            {paged.items.map((user) => {
               const isMe = user.id === meId;
               const deletable = canDeleteFromList({ id: meId, role: "admin" }, user);
               return (
@@ -100,6 +103,7 @@ export function UsersManager({ users, meId }: { users: User[]; meId: string }) {
           </tbody>
         </table>
       </div>
+      <Pagination {...paged} unit="คน" href={(p) => (p > 1 ? `/backoffice/users?page=${p}` : "/backoffice/users")} />
       <p className="text-[13px] text-rimlay-driftwood">
         ลบบัญชีของตัวเองไม่ได้จากหน้านี้ — ทำได้ที่หน้า “โปรไฟล์” เท่านั้น และจะถูกออกจากระบบทันที
       </p>

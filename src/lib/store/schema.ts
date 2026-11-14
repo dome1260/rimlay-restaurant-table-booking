@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidDate } from "@/lib/booking/format";
 import { EDD_MINUTES, SLOT_MINUTES, toMinutes } from "./quota";
 
 export const tableSchema = z.object({
@@ -56,10 +57,11 @@ export const holidaySchema = z.object({
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "กรุณาเลือกวันที่")
-    .refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)), "วันที่ไม่ถูกต้อง"),
+    .refine(isValidDate, "วันที่ไม่ถูกต้อง"),
   note: z.string().trim().max(100, "หมายเหตุยาวไม่เกิน 100 ตัวอักษร").optional(),
 });
 
-export function isPastDate(date: string, now: Date = new Date()): boolean {
+// `now` must come from getNow() on the server so the dev clock applies.
+export function isPastDate(date: string, now: Date): boolean {
   return date < bangkokToday(now);
 }
