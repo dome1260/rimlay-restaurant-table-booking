@@ -15,6 +15,155 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_events: {
+        Row: {
+          actor_id: string | null
+          actor_kind: string
+          actor_name: string | null
+          booking_id: string
+          created_at: string
+          details: Json | null
+          from_status: Database["public"]["Enums"]["booking_status"] | null
+          id: number
+          kind: string
+          to_status: Database["public"]["Enums"]["booking_status"] | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind: string
+          actor_name?: string | null
+          booking_id: string
+          created_at?: string
+          details?: Json | null
+          from_status?: Database["public"]["Enums"]["booking_status"] | null
+          id?: never
+          kind: string
+          to_status?: Database["public"]["Enums"]["booking_status"] | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: string
+          actor_name?: string | null
+          booking_id?: string
+          created_at?: string
+          details?: Json | null
+          from_status?: Database["public"]["Enums"]["booking_status"] | null
+          id?: never
+          kind?: string
+          to_status?: Database["public"]["Enums"]["booking_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_tables: {
+        Row: {
+          booking_id: string
+          table_id: string
+        }
+        Insert: {
+          booking_id: string
+          table_id: string
+        }
+        Update: {
+          booking_id?: string
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_tables_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_tables_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "dining_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          booking_date: string
+          channel: Database["public"]["Enums"]["booking_channel"]
+          code: string
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          email: string | null
+          ends_at: string
+          id: string
+          note: string | null
+          party_size: number
+          phone: string
+          start_time: string
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+          updated_at: string
+        }
+        Insert: {
+          booking_date: string
+          channel: Database["public"]["Enums"]["booking_channel"]
+          code: string
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          email?: string | null
+          ends_at: string
+          id?: string
+          note?: string | null
+          party_size: number
+          phone: string
+          start_time: string
+          starts_at: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          updated_at?: string
+        }
+        Update: {
+          booking_date?: string
+          channel?: Database["public"]["Enums"]["booking_channel"]
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          email?: string | null
+          ends_at?: string
+          id?: string
+          note?: string | null
+          party_size?: number
+          phone?: string
+          start_time?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_hours: {
         Row: {
           close_time: string | null
@@ -65,6 +214,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      email_outbox: {
+        Row: {
+          body: string
+          booking_id: string | null
+          created_at: string
+          error: string | null
+          id: number
+          status: string
+          subject: string
+          template: string
+          to_email: string
+        }
+        Insert: {
+          body: string
+          booking_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: never
+          status?: string
+          subject: string
+          template: string
+          to_email: string
+        }
+        Update: {
+          body?: string
+          booking_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: never
+          status?: string
+          subject?: string
+          template?: string
+          to_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_outbox_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -136,10 +329,83 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_tables: {
+        Args: {
+          p_actor: string
+          p_actor_name: string
+          p_id: string
+          p_note: string
+          p_now: string
+          p_table_ids: string[]
+        }
+        Returns: undefined
+      }
+      booking_validate: {
+        Args: {
+          p_date: string
+          p_exclude: string
+          p_now: string
+          p_party: number
+          p_start: string
+          p_time_rule: string
+        }
+        Returns: undefined
+      }
+      change_booking_status: {
+        Args: {
+          p_actor: string
+          p_actor_name: string
+          p_id: string
+          p_now: string
+          p_to: Database["public"]["Enums"]["booking_status"]
+        }
+        Returns: Database["public"]["Enums"]["booking_status"]
+      }
+      create_booking: {
+        Args: {
+          p_actor: string
+          p_actor_name: string
+          p_channel: Database["public"]["Enums"]["booking_channel"]
+          p_date: string
+          p_email: string
+          p_name: string
+          p_note: string
+          p_now: string
+          p_party: number
+          p_phone: string
+          p_start: string
+        }
+        Returns: string
+      }
       is_admin: { Args: never; Returns: boolean }
+      is_staff: { Args: never; Returns: boolean }
+      update_booking: {
+        Args: {
+          p_actor: string
+          p_actor_name: string
+          p_date: string
+          p_email: string
+          p_enforce_cutoff: boolean
+          p_id: string
+          p_name: string
+          p_note: string
+          p_now: string
+          p_party: number
+          p_start: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "staff" | "admin"
+      booking_channel: "web" | "walk_in" | "phone_in"
+      booking_status:
+        | "waiting"
+        | "arrived"
+        | "seated"
+        | "closed"
+        | "system_closed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -268,6 +534,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["staff", "admin"],
+      booking_channel: ["web", "walk_in", "phone_in"],
+      booking_status: [
+        "waiting",
+        "arrived",
+        "seated",
+        "closed",
+        "system_closed",
+        "cancelled",
+      ],
     },
   },
 } as const

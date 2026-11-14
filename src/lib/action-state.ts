@@ -10,6 +10,8 @@ export type ActionState = {
   // Echo of what was typed so a failed submit doesn't wipe the form (React 19 resets
   // uncontrolled forms after every action). Never includes passwords.
   values?: Record<string, string>;
+  // Optional pointer shown with an error, e.g. "view the existing booking" on a duplicate phone.
+  link?: { href: string; label: string };
 };
 
 export function submittedValues(formData: FormData): Record<string, string> {

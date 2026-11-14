@@ -10,6 +10,12 @@ const GROUP_LABEL: Record<MenuItem["group"], string> = {
   admin: "ADMIN",
 };
 
+// Detail pages (e.g. /backoffice/bookings/[id]) keep their parent menu item highlighted;
+// the home item is exact-match only because every back-office path starts with it.
+function isActive(pathname: string, href: string): boolean {
+  return href === "/backoffice" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function SoonBadge() {
   return (
     <span className="ml-auto shrink-0 whitespace-nowrap rounded-full bg-rimlay-shallow px-2 py-0.5 text-[11px] font-medium text-rimlay-driftwood">
@@ -42,7 +48,7 @@ export function SidebarNav({ items }: { items: MenuItem[] }) {
                 </span>
               );
             }
-            const active = pathname === item.href;
+            const active = isActive(pathname, item.href);
             return (
               <Link
                 key={item.key}
@@ -69,9 +75,9 @@ export function BottomNav({ items }: { items: MenuItem[] }) {
   const pathname = usePathname();
   // Only pages that exist are reachable from the bar; showing "coming soon" items pushed
   // the Admin pages out of the first four slots on phones.
-  // TODO(Phase 2/3): with 5+ available items (bookings, calendar, dashboard arrive) the bar
-  // needs a "more" sheet instead of silently dropping the rest.
-  const shown = items.filter((item) => item.available).slice(0, 4);
+  // TODO(Phase 2B): the calendar and dashboard make 7 items for Admin; the bar then needs a
+  // "more" sheet instead of silently dropping everything after the fifth.
+  const shown = items.filter((item) => item.available).slice(0, 5);
 
   return (
     <nav
@@ -80,8 +86,8 @@ export function BottomNav({ items }: { items: MenuItem[] }) {
       style={{ gridTemplateColumns: `repeat(${shown.length}, minmax(0, 1fr))` }}
     >
       {shown.map((item) => {
-        const base = "flex flex-col items-center justify-center gap-0.5 text-[11px]";
-        const active = pathname === item.href;
+        const base = "flex min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[11px]";
+        const active = isActive(pathname, item.href);
         return (
           <Link
             key={item.key}
@@ -90,7 +96,7 @@ export function BottomNav({ items }: { items: MenuItem[] }) {
             className={`${base} ${active ? "font-semibold text-rimlay-blue" : "font-medium text-rimlay-driftwood"}`}
           >
             <MenuIcon name={item.icon} size={22} />
-            {item.label}
+            <span className="max-w-full truncate">{item.label}</span>
           </Link>
         );
       })}

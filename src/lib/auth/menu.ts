@@ -15,9 +15,8 @@ export type MenuItem = {
 
 const MENU: MenuItem[] = [
   { key: "home", label: "หน้าหลัก", href: "/backoffice", icon: "home", group: "frontdesk", requiredRole: "staff", available: true },
-  // TODO(Phase 2): enable once the booking list page exists.
-  { key: "bookings", label: "รายการจอง", href: "/backoffice/bookings", icon: "list", group: "frontdesk", requiredRole: "staff", available: false },
-  // TODO(Phase 2): enable once the calendar page exists.
+  { key: "bookings", label: "รายการจอง", href: "/backoffice/bookings", icon: "list", group: "frontdesk", requiredRole: "staff", available: true },
+  // TODO(Phase 2B): enable once the calendar page exists.
   { key: "calendar", label: "ปฏิทินการจอง", href: "/backoffice/calendar", icon: "calendar", group: "frontdesk", requiredRole: "staff", available: false },
   // TODO(Phase 3): dashboard.
   { key: "dashboard", label: "Dashboard", href: "/backoffice/dashboard", icon: "chart", group: "admin", requiredRole: "admin", available: false },

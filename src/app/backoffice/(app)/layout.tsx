@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { BottomNav, SidebarNav } from "@/components/backoffice/Nav";
@@ -6,7 +7,11 @@ import { LogoutIcon } from "@/components/backoffice/MenuIcon";
 import { getCurrentProfile } from "@/lib/auth/dal";
 import { getMenuForRole } from "@/lib/auth/menu";
 import { ROLE_LABEL } from "@/lib/auth/roles";
+import { getNow } from "@/lib/clock";
+import { SIM_CLOCK_COOKIE } from "@/lib/clock-core";
+import { bangkokNow } from "@/lib/booking/slots";
 import { logout } from "../login/actions";
+import { DevClock } from "./dev-clock";
 
 export default function BackofficeLayout({ children }: LayoutProps<"/backoffice">) {
   return (
@@ -20,6 +25,17 @@ async function Shell({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
   const menu = getMenuForRole(profile.role);
   const initial = profile.displayName.trim().charAt(0) || profile.username.charAt(0);
+
+  // Development-only clock control; production never renders it or reads the cookie.
+  const isDev = process.env.NODE_ENV === "development";
+  let devClock: { nowLocal: string; simulated: boolean } | null = null;
+  if (isDev) {
+    const now = await getNow();
+    const { date, minutes } = bangkokNow(now);
+    const hh = String(Math.floor(minutes / 60)).padStart(2, "0");
+    const mm = String(minutes % 60).padStart(2, "0");
+    devClock = { nowLocal: `${date}T${hh}:${mm}`, simulated: Boolean((await cookies()).get(SIM_CLOCK_COOKIE)) };
+  }
 
   return (
     <div className="flex min-h-dvh">
@@ -80,7 +96,10 @@ async function Shell({ children }: { children: React.ReactNode }) {
             </form>
           </div>
         </header>
-        <main className="flex-1 px-4 pb-28 pt-6 sm:px-8 md:pb-10 md:pt-10">{children}</main>
+        <main className="flex-1 px-4 pb-28 pt-6 sm:px-8 md:pb-10 md:pt-10">
+          {devClock ? <DevClock nowLocal={devClock.nowLocal} simulated={devClock.simulated} /> : null}
+          {children}
+        </main>
       </div>
 
       <BottomNav items={menu} />

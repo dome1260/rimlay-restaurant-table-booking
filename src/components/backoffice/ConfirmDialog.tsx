@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import type { ActionState } from "@/lib/action-state";
 import { Modal } from "./Modal";
-import { dangerButton, FormError, secondaryButton } from "./ui";
+import { dangerButton, FormError, primaryButton, secondaryButton } from "./ui";
 
 // Confirmation step for destructive actions. Stays open and shows the message if the
 // action is refused (e.g. last Admin).
@@ -13,6 +13,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  tone = "danger",
   onConfirm,
 }: {
   open: boolean;
@@ -20,6 +21,7 @@ export function ConfirmDialog({
   title: string;
   description: string;
   confirmLabel: string;
+  tone?: "danger" | "primary";
   onConfirm: () => Promise<ActionState | void>;
 }) {
   const [error, setError] = useState<string>();
@@ -39,7 +41,7 @@ export function ConfirmDialog({
         </button>
         <button
           type="button"
-          className={dangerButton}
+          className={tone === "danger" ? dangerButton : primaryButton}
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
