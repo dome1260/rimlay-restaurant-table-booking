@@ -20,16 +20,17 @@
 4. **สรุปผล** ให้คุณโดม แล้ว**ขออนุญาตก่อน commit / push ทุกครั้ง**
 
 ## Phases
-| Phase | ขอบเขต | สถานะ |
-|---|---|---|
-| 0 | Login หลังบ้าน + หน้าหลัก 1 หน้า, profiles + RLS, brand + โลโก้ | เสร็จ |
-| 1 | schema การจอง, logic slot/quota/EDD, หน้าจองลูกค้า (C1, C2) | |
-| 2 | งาน Staff: รายการจอง, walk-in/phone-in, รายละเอียด, จัดโต๊ะ, ปิดโต๊ะ, แก้ไข/ยกเลิก | |
-| 3 | ลูกค้าจัดการคิวเอง: OTP, แก้ไข/ยกเลิก, email (Gmail SMTP + Nodemailer) | |
-| 4 | Scheduled jobs: no-show, ปิดสถานะตอนร้านปิด (Supabase pg_cron + pg_net) | |
-| 5 | ตั้งค่า Admin: โต๊ะ, เวลาทำการ, วันหยุดพิเศษ, เตือนคิวที่กระทบ, ผู้ใช้งาน | |
-| 6 | Calendar + Dashboard | |
-| 7 | E2E ทั้งระบบ + deploy Vercel | |
+ลำดับ: ทำหลังบ้าน (Admin + Staff) ให้เสร็จก่อน แล้วจึงทำฝั่งลูกค้า (ปรับแผน 2026-11-14)
+
+| Phase | ขอบเขต | Feature | สถานะ |
+|---|---|---|---|
+| 0 | Login หลังบ้าน + หน้าหลัก 1 หน้า, profiles + RLS, brand + โลโก้ | BO-01 | เสร็จ |
+| 1 | หลังบ้าน ส่วนที่ 1 — ตั้งค่าร้าน + ผู้ใช้: โต๊ะ, เวลาทำการ, วันหยุดพิเศษ, จัดการผู้ใช้, ลบบัญชีตัวเอง | ADM-01, 02, 03, 06, 07 | |
+| 2 | หลังบ้าน ส่วนที่ 2 — งานจองคิว: schema การจอง, logic slot/quota/EDD, งาน Staff ทั้งหมด, รายละเอียดการจอง, Calendar, เตือนคิวที่กระทบ, email (Gmail SMTP + Nodemailer), เวลาจำลอง dev | SYS-01, 02, 05, STF-01–08, ADM-04, 05, 08 | |
+| 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron + pg_net) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | |
+| 4 | ลูกค้าจองโต๊ะ (C1–C6) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | |
+| 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | |
+| 6 | E2E ทั้งระบบ + deploy Vercel | — | |
 
 ## Stack & constraints
 - Next.js 16 (App Router, Cache Components เปิดอยู่, `src/proxy.ts` แทน middleware) + Tailwind 4 + TypeScript
@@ -40,7 +41,7 @@
 - Key ทั้งหมดอยู่ใน `.env.local` เท่านั้น ห้าม commit; `SUPABASE_SECRET_KEY` คุณโดมใส่เอง ห้ามขอในแชท
 - Back-office login = username + email จริง (ค้นหา email ฝั่ง server ด้วย secret key)
 - เวลาทั้งระบบใช้ Asia/Bangkok; เคสที่ต้องรอเวลาใช้ "เวลาจำลอง" เฉพาะ dev และระบุในผลทดสอบ
-- Vercel = เป้าหมาย deploy (ยังไม่เชื่อมจนถึง Phase 7)
+- Vercel = เป้าหมาย deploy (ยังไม่เชื่อมจนถึง Phase 6)
 
 ## Commands
 - `npm run dev` — dev server http://localhost:3000
