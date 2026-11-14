@@ -2,7 +2,7 @@
 
 import { useTransition, type FormEvent } from "react";
 import { useToast } from "@/components/backoffice/Toast";
-import { resetSimulatedTime, setSimulatedTime } from "./dev-clock-actions";
+import { resetSimulatedTime, runScheduledJobs, setSimulatedTime } from "./dev-clock-actions";
 
 // Development-only control (the layout doesn't render it in production). Moving the clock lets
 // the cutoff / no-show cases be tested without waiting in real time.
@@ -10,11 +10,11 @@ export function DevClock({ nowLocal, simulated }: { nowLocal: string; simulated:
   const toast = useToast();
   const [pending, startTransition] = useTransition();
 
-  function run(task: () => Promise<{ error?: string }>, done: string) {
+  function run(task: () => Promise<{ error?: string; message?: string }>, done: string) {
     startTransition(async () => {
       const result = await task();
       if (result.error) toast.error(result.error);
-      else toast.success(done);
+      else toast.success(result.message ?? done);
     });
   }
 
@@ -50,6 +50,14 @@ export function DevClock({ nowLocal, simulated }: { nowLocal: string; simulated:
         className="h-9 rounded-field bg-rimlay-deep px-3 font-semibold text-white disabled:opacity-60"
       >
         ตั้งเวลา
+      </button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => run(runScheduledJobs, "รันงานตั้งเวลาแล้ว")}
+        className="h-9 rounded-field border border-rimlay-border bg-white px-3 font-semibold text-rimlay-deep disabled:opacity-60"
+      >
+        รันงานตั้งเวลา
       </button>
       {simulated ? (
         <button

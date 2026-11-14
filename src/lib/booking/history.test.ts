@@ -19,6 +19,13 @@ describe("history (ADM-05, TC-057, TC-089)", () => {
     expect(eventTitle({ ...base, kind: "created", to_status: "waiting" })).toContain("จองสำเร็จ");
   });
 
+  it("explains why the system closed a booking (SYS-03, SYS-04)", () => {
+    const system = { ...base, to_status: "system_closed" as const, actor_kind: "system", actor_name: "ระบบ" };
+    expect(eventTitle({ ...system, details: { reason: "no_show" } })).toBe("ปิดโต๊ะโดยระบบ · ไม่มาตามเวลานัด");
+    expect(eventTitle({ ...system, details: { reason: "store_closed" } })).toBe("ปิดโต๊ะโดยระบบ · ร้านปิด");
+    expect(eventTitle({ ...system, details: null })).toBe("ปิดโต๊ะโดยระบบ");
+  });
+
   it("lists what an edit changed", () => {
     const lines = describeChanges({
       party_size: { from: 4, to: 6 },

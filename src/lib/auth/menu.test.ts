@@ -23,9 +23,9 @@ describe("getMenuForRole", () => {
     expect(keys).toEqual(["home", "bookings", "calendar", "dashboard", "tables", "hours", "users"]);
   });
 
-  it("only exposes pages that exist so far (Phase 2B)", () => {
+  it("only exposes pages that exist so far (Phase 3)", () => {
     const available = getMenuForRole("admin").filter((m) => m.available).map((m) => m.key);
-    expect(available).toEqual(["home", "bookings", "calendar", "tables", "hours", "users"]);
+    expect(available).toEqual(["home", "bookings", "calendar", "dashboard", "tables", "hours", "users"]);
   });
 
   it("keeps the Admin settings pages out of the staff menu", () => {
@@ -43,12 +43,13 @@ describe("splitBottomNav", () => {
 
   it("moves the overflow into the more sheet (Admin)", () => {
     const { bar, more } = splitBottomNav(getMenuForRole("admin"));
-    expect(bar.map((m) => m.key)).toEqual(["home", "bookings", "calendar", "tables"]);
-    expect(more.map((m) => m.key)).toEqual(["hours", "users"]);
+    expect(bar.map((m) => m.key)).toEqual(["home", "bookings", "calendar", "dashboard"]);
+    expect(more.map((m) => m.key)).toEqual(["tables", "hours", "users"]);
   });
 
   it("skips pages that are not built yet", () => {
-    const { bar, more } = splitBottomNav(getMenuForRole("admin"));
-    expect([...bar, ...more].some((m) => m.key === "dashboard")).toBe(false);
+    const items = getMenuForRole("admin").map((m) => (m.key === "users" ? { ...m, available: false } : m));
+    const { bar, more } = splitBottomNav(items);
+    expect([...bar, ...more].some((m) => m.key === "users")).toBe(false);
   });
 });

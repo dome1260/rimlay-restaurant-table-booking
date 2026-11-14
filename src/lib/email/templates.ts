@@ -1,6 +1,6 @@
 import { formatThaiDate } from "@/lib/booking/format";
 
-export type BookingEmailKind = "created" | "edited" | "cancelled";
+export type BookingEmailKind = "created" | "edited" | "cancelled" | "no_show";
 
 export type BookingEmailData = {
   code: string;
@@ -14,12 +14,14 @@ const SUBJECT: Record<BookingEmailKind, string> = {
   created: "ยืนยันการจองโต๊ะ Rimlay",
   edited: "การจองโต๊ะของคุณมีการเปลี่ยนแปลง",
   cancelled: "การจองโต๊ะของคุณถูกยกเลิก",
+  no_show: "การจองโต๊ะของคุณถูกปิดเนื่องจากไม่มาตามเวลานัด",
 };
 
 const LEAD: Record<BookingEmailKind, string> = {
   created: "ขอบคุณที่จองโต๊ะกับ Rimlay การจองของคุณสำเร็จแล้ว",
   edited: "การจองของคุณได้รับการแก้ไข รายละเอียดล่าสุดมีดังนี้",
   cancelled: "การจองของคุณถูกยกเลิกแล้ว รายละเอียดของคิวที่ยกเลิกมีดังนี้",
+  no_show: "คิวของคุณถูกปิดโดยระบบ เนื่องจากไม่ได้มาถึงร้านภายใน 15 นาทีหลังเวลานัด รายละเอียดของคิวมีดังนี้",
 };
 
 // SYS-05 / TC-107: only the appointment time is shown, never the internal EDD end time.

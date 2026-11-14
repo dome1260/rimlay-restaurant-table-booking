@@ -37,12 +37,19 @@ export function describeChanges(details: unknown): string[] {
     .map(([field, change]) => `${FIELD_LABEL[field]}: ${show(field, change.from)} → ${show(field, change.to)}`);
 }
 
+const SYSTEM_REASON: Record<string, string> = {
+  no_show: "ไม่มาตามเวลานัด",
+  store_closed: "ร้านปิด",
+};
+
 export function eventTitle(event: BookingEvent): string {
   if (event.kind === "created") return "รอมาถึง (จองสำเร็จ)";
   if (event.kind === "edited") return "แก้ไขคิว";
-  const tables = (event.details as { tables?: string } | null)?.tables;
+  const details = event.details as { tables?: string; reason?: string } | null;
   const label = event.to_status ? STATUS_LABEL[event.to_status] : "";
-  return tables ? `${label} · ${tables}` : label;
+  if (details?.tables) return `${label} · ${details.tables}`;
+  const reason = details?.reason ? SYSTEM_REASON[details.reason] : undefined;
+  return reason ? `${label} · ${reason}` : label;
 }
 
 export function eventActor(event: BookingEvent, channel: BookingChannel): string {

@@ -17,6 +17,15 @@ describe("renderBookingEmail (TC-042, TC-107)", () => {
     expect(renderBookingEmail("cancelled", data).subject).toContain("ยกเลิก");
   });
 
+  it("tells the customer a no-show booking was closed (TC-105)", () => {
+    const { subject, body, html } = renderBookingEmail("no_show", data);
+    expect(subject).toContain("ไม่มาตามเวลานัด");
+    expect(body).toContain("15 นาที");
+    expect(body).toContain("18:00 น.");
+    expect(html).toContain("BK-2611-0001");
+    expect(body).not.toContain("20:00");
+  });
+
   it("never mentions an end time", () => {
     const { body } = renderBookingEmail("created", data);
     expect(body).not.toContain("20:00");

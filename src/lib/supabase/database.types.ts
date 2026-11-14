@@ -217,35 +217,38 @@ export type Database = {
       }
       email_outbox: {
         Row: {
-          body: string
+          body: string | null
           booking_id: string | null
+          claimed_at: string | null
           created_at: string
           error: string | null
           id: number
           status: string
-          subject: string
+          subject: string | null
           template: string
           to_email: string
         }
         Insert: {
-          body: string
+          body?: string | null
           booking_id?: string | null
+          claimed_at?: string | null
           created_at?: string
           error?: string | null
           id?: never
           status?: string
-          subject: string
+          subject?: string | null
           template: string
           to_email: string
         }
         Update: {
-          body?: string
+          body?: string | null
           booking_id?: string | null
+          claimed_at?: string | null
           created_at?: string
           error?: string | null
           id?: never
           status?: string
-          subject?: string
+          subject?: string | null
           template?: string
           to_email?: string
         }
@@ -350,6 +353,21 @@ export type Database = {
           p_time_rule: string
         }
         Returns: undefined
+      }
+      claim_pending_emails: {
+        Args: { p_limit?: number }
+        Returns: {
+          body: string | null
+          booking_id: string | null
+          id: number
+          subject: string | null
+          template: string
+          to_email: string
+        }[]
+      }
+      run_booking_closures: {
+        Args: { p_now?: string }
+        Returns: Json
       }
       change_booking_status: {
         Args: {
