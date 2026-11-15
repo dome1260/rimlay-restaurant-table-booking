@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { fieldErrorsFrom } from "@/lib/action-state";
+import { fieldErrorsFrom, formText } from "@/lib/action-state";
 import { loadSlotOptions, type SlotOptions } from "@/lib/booking/availability";
 import { clientKey } from "@/lib/booking/client-key";
 import { rpcErrorMessage } from "@/lib/booking/errors";
@@ -40,18 +40,13 @@ export async function getPublicSlots(input: { date: string; party: number }): Pr
   return { slots, reason };
 }
 
-function text(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
-
 export async function createWebBooking(_prev: WebBookingState, formData: FormData): Promise<WebBookingState> {
   const values = Object.fromEntries(
-    ["date", "time", "party", "name", "phone", "email"].map((key) => [key, text(formData, key)]),
+    ["date", "time", "party", "name", "phone", "email"].map((key) => [key, formText(formData, key)]),
   );
 
   // Hidden field only bots fill in.
-  if (text(formData, "hp_token")) return { error: "ดำเนินการไม่สำเร็จ กรุณาลองใหม่", values };
+  if (formText(formData, "hp_token")) return { error: "ดำเนินการไม่สำเร็จ กรุณาลองใหม่", values };
 
   const parsed = webBookingSchema.safeParse({ ...values, email: values.email.trim() });
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error), values };

@@ -1,18 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Field, FormError, inputClass, primaryButton, secondaryButton, smallButton } from "@/components/backoffice/ui";
-import { formatMonthTitle, shiftMonth } from "@/lib/booking/calendar";
-import { buildCustomerCells, type PublicCalendar } from "@/lib/booking/customer-calendar";
+import { Field, FormError, inputClass, primaryButton, secondaryButton } from "@/components/backoffice/ui";
 import { formatThaiDate } from "@/lib/booking/format";
 import { formatPhone } from "@/lib/booking/phone";
+import type { PublicCalendar } from "@/lib/booking/customer-calendar";
 import { STATUS_LABEL, STATUS_STYLE } from "@/lib/booking/status";
+import { MonthCalendar } from "./_components/month-calendar";
+import { SeatPicker } from "./_components/seat-picker";
+import { SlotGrid, useSlotLoader } from "./_components/slot-grid";
 import { createWebBooking, getPublicSlots, type WebBookingState } from "./actions";
-
-const SEATS = [1, 2, 3, 4, 5, 6, 7, 8];
-const WEEKDAYS = ["อา.", "จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส."];
-
-type SlotState = { slots: string[]; reason?: string; loading: boolean; failed?: boolean };
 
 export function BookingFlow({ calendar }: { calendar: PublicCalendar }) {
   const [round, setRound] = useState(0);
@@ -21,26 +19,9 @@ export function BookingFlow({ calendar }: { calendar: PublicCalendar }) {
 
 function Booking({ calendar, onAgain }: { calendar: PublicCalendar; onAgain: () => void }) {
   const [party, setParty] = useState<number | null>(null);
-  const [month, setMonth] = useState(calendar.today.slice(0, 7));
   const [date, setDate] = useState("");
   const [rawTime, setRawTime] = useState("");
-  const [slotState, setSlotState] = useState<SlotState>({ slots: [], loading: false });
-  const request = useRef(0);
-
-  function loadSlots(nextDate: string, nextParty: number | null) {
-    if (!nextDate || !nextParty) return;
-    const id = ++request.current;
-    setSlotState((s) => ({ ...s, loading: true }));
-    getPublicSlots({ date: nextDate, party: nextParty })
-      .then((res) => {
-        if (id === request.current) setSlotState({ slots: res.slots, reason: res.reason, loading: false });
-      })
-      .catch(() => {
-        if (id === request.current) {
-          setSlotState({ slots: [], reason: "โหลดเวลาที่ว่างไม่สำเร็จ กรุณาลองใหม่", loading: false, failed: true });
-        }
-      });
-  }
+  const { slotState, load: loadSlots } = useSlotLoader((d, p) => getPublicSlots({ date: d, party: p }));
 
   const [state, action, pending] = useActionState<WebBookingState, FormData>(async (prev, formData) => {
     const result = await createWebBooking(prev, formData);
@@ -58,9 +39,6 @@ function Booking({ calendar, onAgain }: { calendar: PublicCalendar; onAgain: () 
   });
 
   if (state.done) return <Done done={state.done} onAgain={onAgain} />;
-
-  const lastMonth = calendar.maxDate.slice(0, 7);
-  const cells = buildCustomerCells(month, calendar);
 
   return (
     <form action={action} noValidate className="flex flex-col gap-6 lg:flex-row lg:items-start">
@@ -87,103 +65,25 @@ function Booking({ calendar, onAgain }: { calendar: PublicCalendar; onAgain: () 
 
       <div className="flex min-w-0 flex-1 flex-col gap-5">
         <Step number={1} title="จำนวนที่นั่ง" hint="เลือกได้ 1–8 ท่าน">
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-            {SEATS.map((n) => (
-              <button
-                key={n}
-                type="button"
-                aria-pressed={party === n}
-                onClick={() => {
-                  setParty(n);
-                  loadSlots(date, n);
-                }}
-                className={`h-11 rounded-field border text-base font-semibold transition-colors ${
-                  party === n
-                    ? "border-rimlay-blue bg-rimlay-blue text-white"
-                    : "border-rimlay-border bg-white text-rimlay-deep hover:bg-rimlay-shallow"
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
+          <SeatPicker
+            value={party}
+            onChange={(n) => {
+              setParty(n);
+              loadSlots(date, n);
+            }}
+          />
           {errors.party ? <p className="mt-2 text-sm text-rose-700">{errors.party}</p> : null}
         </Step>
 
         <Step number={2} title="เลือกวันที่" hint="ร้านปิดและวันหยุดพิเศษเลือกไม่ได้">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <button
-              type="button"
-              aria-label="เดือนก่อนหน้า"
-              disabled={month <= calendar.today.slice(0, 7)}
-              onClick={() => setMonth(shiftMonth(month, -1))}
-              className="flex size-11 items-center justify-center rounded-field border border-rimlay-border bg-white text-rimlay-deep hover:bg-rimlay-shallow disabled:cursor-not-allowed disabled:text-rimlay-driftwood/40 disabled:hover:bg-white"
-            >
-              <Chevron direction="left" />
-            </button>
-            <span className="font-semibold" aria-live="polite">
-              {formatMonthTitle(month)}
-            </span>
-            <button
-              type="button"
-              aria-label="เดือนถัดไป"
-              disabled={month >= lastMonth}
-              onClick={() => setMonth(shiftMonth(month, 1))}
-              className="flex size-11 items-center justify-center rounded-field border border-rimlay-border bg-white text-rimlay-deep hover:bg-rimlay-shallow disabled:cursor-not-allowed disabled:text-rimlay-driftwood/40 disabled:hover:bg-white"
-            >
-              <Chevron direction="right" />
-            </button>
-          </div>
-          <div className="mb-1.5 grid grid-cols-7 gap-1 text-center text-[13px] text-rimlay-driftwood sm:gap-1.5">
-            {WEEKDAYS.map((w) => (
-              <span key={w}>{w}</span>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-            {cells.map((cell) => {
-              if (!cell.inMonth) return <span key={cell.date} aria-hidden="true" />;
-              const selected = cell.date === date;
-              const open = cell.state === "open";
-              const tone = selected
-                ? "border-rimlay-blue bg-rimlay-blue font-semibold text-white"
-                : open
-                  ? `bg-white text-rimlay-deep hover:bg-rimlay-shallow ${cell.isToday ? "border-rimlay-blue font-semibold text-rimlay-blue" : "border-rimlay-border"}`
-                  : cell.state === "holiday"
-                    ? "border-rose-200 bg-rose-50 text-rose-700"
-                    : cell.state === "closed"
-                      ? "border-transparent text-rimlay-driftwood line-through"
-                      : "border-transparent text-rimlay-driftwood/50";
-              return (
-                <button
-                  key={cell.date}
-                  type="button"
-                  disabled={!open}
-                  aria-pressed={selected}
-                  aria-label={`${formatThaiDate(cell.date)}${cell.state === "holiday" ? " วันหยุดพิเศษ" : cell.state === "closed" ? " ร้านปิด" : ""}`}
-                  onClick={() => {
-                    setDate(cell.date);
-                    loadSlots(cell.date, party);
-                  }}
-                  className={`flex h-12 flex-col items-center justify-center rounded-field border text-[15px] leading-tight transition-colors disabled:cursor-not-allowed ${tone}`}
-                >
-                  {cell.day}
-                  {cell.state === "holiday" ? <span className="text-[10px]">หยุด</span> : null}
-                  {cell.isToday && open && !selected ? <span className="text-[10px]">วันนี้</span> : null}
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-rimlay-driftwood">
-            <span className="flex items-center gap-1.5">
-              <span className="size-3 rounded bg-rimlay-blue" /> วันที่เลือก
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-3 rounded border border-rose-200 bg-rose-50" /> วันหยุดพิเศษ
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="line-through">16</span> ร้านปิด
-            </span>
-          </div>
+          <MonthCalendar
+            calendar={calendar}
+            date={date}
+            onSelect={(d) => {
+              setDate(d);
+              loadSlots(d, party);
+            }}
+          />
           {errors.date ? <p className="mt-2 text-sm text-rose-700">{errors.date}</p> : null}
         </Step>
 
@@ -192,42 +92,14 @@ function Booking({ calendar, onAgain }: { calendar: PublicCalendar; onAgain: () 
           title="เลือกเวลา"
           hint={party ? `เฉพาะเวลาที่ยังว่างสำหรับ ${party} ท่าน · ปิดรับจอง 15 นาทีก่อนเวลาเริ่ม` : "เลือกจำนวนที่นั่งและวันที่ก่อน"}
         >
-          <div aria-live="polite">
-            {!party || !date ? (
-              <p className="text-[15px] text-rimlay-driftwood">เลือกจำนวนที่นั่งและวันที่เพื่อดูเวลาที่ว่าง</p>
-            ) : slotState.loading && slotState.slots.length === 0 ? (
-              <p className="text-[15px] text-rimlay-driftwood">กำลังโหลดเวลาที่ว่าง…</p>
-            ) : slotState.slots.length === 0 ? (
-              <div className="flex flex-wrap items-center gap-3 rounded-field bg-rimlay-shell px-3 py-2 text-[15px] text-rimlay-driftwood">
-                <span>{slotState.reason ?? "ไม่มีเวลาว่าง"}</span>
-                {slotState.failed ? (
-                  <button type="button" onClick={() => loadSlots(date, party)} className={smallButton}>
-                    ลองใหม่
-                  </button>
-                ) : null}
-              </div>
-            ) : (
-              <div
-                className={`grid grid-cols-4 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(96px,1fr))] ${slotState.loading ? "opacity-60" : ""}`}
-              >
-                {slotState.slots.map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    aria-pressed={time === slot}
-                    onClick={() => setRawTime(slot)}
-                    className={`h-11 rounded-field border text-[15px] font-medium transition-colors ${
-                      time === slot
-                        ? "border-rimlay-blue bg-rimlay-blue text-white"
-                        : "border-rimlay-border bg-white text-rimlay-deep hover:bg-rimlay-shallow"
-                    }`}
-                  >
-                    {slot}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <SlotGrid
+            party={party}
+            date={date}
+            slotState={slotState}
+            time={time}
+            onSelect={setRawTime}
+            onRetry={() => loadSlots(date, party)}
+          />
           {errors.time ? <p className="mt-2 text-sm text-rose-700">{errors.time}</p> : null}
         </Step>
 
@@ -282,7 +154,7 @@ function Booking({ calendar, onAgain }: { calendar: PublicCalendar; onAgain: () 
         <Rules />
       </aside>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-rimlay-border bg-white px-4 pb-5 pt-3 shadow-float lg:hidden">
+      <div data-fixed-bar="" className="fixed inset-x-0 bottom-0 z-20 border-t border-rimlay-border bg-white px-4 pb-5 pt-3 shadow-float lg:hidden">
         <FormError message={state.error} />
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -338,14 +210,6 @@ function Rules() {
   );
 }
 
-function Chevron({ direction }: { direction: "left" | "right" }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={direction === "left" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"} />
-    </svg>
-  );
-}
-
 // Shown in place of the form so there is no URL carrying the booking or customer details.
 function Done({ done, onAgain }: { done: NonNullable<WebBookingState["done"]>; onAgain: () => void }) {
   const heading = useRef<HTMLHeadingElement>(null);
@@ -381,10 +245,14 @@ function Done({ done, onAgain }: { done: NonNullable<WebBookingState["done"]>; o
       <p className="text-sm leading-relaxed text-rimlay-driftwood">
         กรุณามาถึงร้านตามเวลานัด หากเลยเวลา 15 นาที ระบบจะปล่อยโต๊ะอัตโนมัติ
       </p>
-      {/* TODO(Phase 5): "จัดการคิวของฉัน" button (phone + OTP) goes next to this one. */}
-      <button type="button" onClick={onAgain} className={`${secondaryButton} w-full`}>
-        จองโต๊ะอีกครั้ง
-      </button>
+      <div className="flex w-full flex-col gap-3 sm:flex-row">
+        <Link href="/my-booking" className={`${primaryButton} w-full sm:flex-1`}>
+          จัดการคิวของฉัน
+        </Link>
+        <button type="button" onClick={onAgain} className={`${secondaryButton} w-full sm:flex-1`}>
+          จองโต๊ะอีกครั้ง
+        </button>
+      </div>
     </div>
   );
 }

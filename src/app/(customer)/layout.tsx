@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { Logo } from "@/components/brand/Logo";
+import { CustomerNav } from "./_components/customer-nav";
 import { loadBusinessHours } from "@/lib/booking/public";
 import { bangkokNow } from "@/lib/booking/slots";
 import { getNow } from "@/lib/clock";
@@ -13,14 +14,14 @@ import { summarizeHours } from "@/lib/store/hours-summary";
 export default function CustomerLayout({ children }: LayoutProps<"/">) {
   return (
     // The booking page has a fixed summary bar on small screens; padding the whole page (not just
-    // <main>) keeps the footer readable above it.
-    <div className="flex min-h-dvh flex-col pb-28 lg:pb-0">
+    // <main>) keeps the footer readable above it. Other pages have no bar, so no extra space.
+    <div className="flex min-h-dvh flex-col has-[[data-fixed-bar]]:max-lg:pb-28">
       <header className="border-b border-rimlay-border bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link href="/" aria-label="Rimlay หน้าแรก">
             <Logo size={36} />
           </Link>
-          {/* TODO(Phase 5): "ค้นหาคิวของฉัน" link (phone + OTP) goes here. */}
+          <CustomerNav />
         </div>
       </header>
       <Suspense fallback={null}>

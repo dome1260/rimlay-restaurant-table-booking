@@ -14,6 +14,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   tone = "danger",
+  cancelLabel = "ยกเลิก",
   onConfirm,
 }: {
   open: boolean;
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   description: string;
   confirmLabel: string;
   tone?: "danger" | "primary";
+  cancelLabel?: string;
   onConfirm: () => Promise<ActionState | void>;
 }) {
   const [error, setError] = useState<string>();
@@ -37,7 +39,7 @@ export function ConfirmDialog({
       <FormError message={error} />
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" className={secondaryButton} onClick={close} disabled={pending}>
-          ยกเลิก
+          {cancelLabel}
         </button>
         <button
           type="button"

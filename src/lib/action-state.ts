@@ -27,6 +27,12 @@ export function submittedValues(formData: FormData): Record<string, string> {
   return out;
 }
 
+// A text field from a submitted form; "" when missing or a file.
+export function formText(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
 export function fieldErrorsFrom(error: { issues: { path: PropertyKey[]; message: string }[] }): Record<string, string> {
   const out: Record<string, string> = {};
   for (const issue of error.issues) {

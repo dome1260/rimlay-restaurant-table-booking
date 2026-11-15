@@ -45,9 +45,14 @@ export const webBookingSchema = z.object({
   email: z.string().trim().min(1, "กรุณากรอกอีเมล").pipe(z.email("รูปแบบอีเมลไม่ถูกต้อง")),
 });
 
+// CUS-10: customers edit everything but the phone number; the email stays required because it
+// is what they sign in with.
+export const myBookingEditSchema = webBookingSchema.omit({ phone: true });
+
 // The phone number and the channel are fixed once a booking exists.
 export const editBookingSchema = z.object({ date, time, party, name, email, note });
 
+export type MyBookingEditInput = z.infer<typeof myBookingEditSchema>;
 export type WebBookingInput = z.infer<typeof webBookingSchema>;
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 export type EditBookingInput = z.infer<typeof editBookingSchema>;

@@ -30,7 +30,7 @@
 | 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง, เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | เสร็จ (commit f510ed5) |
 | 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | เสร็จ (commit ecfe52c) |
 | 4 | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | เสร็จ (commit 0811915) |
-| 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | |
+| 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | เสร็จ |
 | 6 | E2E ทั้งระบบ + deploy Vercel | — | |
 
 ## Stack & constraints
@@ -74,13 +74,24 @@
 - `getPublicSlots` ใช้ `loadSlotOptions({client: admin, channel: "web"})`; `createWebBooking` ตรวจ honeypot → zod (`webBookingSchema`, email บังคับ) → `register_booking_attempt` (5 ครั้ง/10 นาที/IP จาก `x-real-ip` หรือ hop สุดท้ายของ `x-forwarded-for`, เก็บเฉพาะ hash; ถูกปฏิเสธตามกฎการจองจะคืนสิทธิ์; ไม่รู้ IP = ข้าม limit) → `create_web_booking` (RPC เฉพาะลูกค้า: channel web, ไม่มี actor/หมายเหตุ แล้วเรียก `create_booking`) → `sendBookingEmail(id, "created")`
 - หน้าจองสำเร็จแสดงในหน้าเดิมจาก state ไม่มี URL ที่มี id; ข้อความเบอร์ซ้ำไม่เปิดเผยรายละเอียดคิวเดิม
 - ที่อยู่/เบอร์ร้านใน footer เป็น placeholder ว่างใน `src/lib/store/info.ts` (TODO รอข้อมูลจริง); เวลาทำการดึงจาก DB
-- TODO(Phase 5): เมนู "ค้นหาคิวของฉัน" และปุ่ม "จัดการคิวของฉัน" (C3–C4) ซ่อนไว้
 - TODO(Phase 6): พิจารณา Cloudflare Turnstile หากบอตยังเป็นปัญหา
 
+## Customer self-manage (Phase 5)
+- หน้า `/my-booking` (`src/app/(customer)/my-booking/`): กรอกเบอร์ → OTP ทางอีเมล → "คิวของฉัน" (แก้ไข/ยกเลิก); เมนูบน header + ปุ่ม "จัดการคิวของฉัน" ในหน้าจองสำเร็จ
+- OTP/session อยู่ใน DB (`customer_otps` แถวเดียวต่อเบอร์, `customer_sessions`) เรียกผ่าน RPC `request_customer_otp` / `verify_customer_otp` ด้วย admin client เท่านั้น: 6 หลัก อายุ 5 นาที, ขอใหม่ได้ทุก 60 วินาที (รหัสเก่าตายทันที), ผิดครบ 5 ครั้ง (นับข้ามรหัสที่ยังไม่หมดอายุ) ล็อกเบอร์ 15 นาที; เก็บเฉพาะ HMAC-SHA256(เบอร์:รหัส) ที่ใช้ `SUPABASE_SECRET_KEY` เป็นกุญแจ
+- ขอบเขตที่ลูกค้าเห็น/จัดการ = **เบอร์ + อีเมลเดียวกัน** (ไม่สนตัวพิมพ์): อีเมลที่รับ OTP ได้ = อีเมลของคิวที่ยังไม่จบของเบอร์ (ถ้าไม่มี ใช้คิวใน 30 วันล่าสุด) ถ้ามีหลายอีเมล ลูกค้าเลือกจากรายการแบบ mask (กันคนอื่นจองเบอร์เราด้วยอีเมลตัวเองแล้วแย่ง OTP); ไม่พบคิว / มีแต่คิวไม่มีอีเมล = ข้อความเดียวกัน ไม่ส่ง OTP; แก้อีเมลของคิว = คิวย้ายไปผูกกับอีเมลใหม่และหายจากรายการนี้
+- Session = cookie `rimlay-customer-session` (httpOnly, session cookie) + แถวหมดอายุ 30 นาที นับด้วย `getNow()`; แสดงคิวที่ยังไม่จบ + ประวัติ 30 วัน เลือกเฉพาะคอลัมน์ที่ลูกค้าเห็นได้ (`src/lib/customer/bookings.ts`) ห้ามส่ง `ends_at` / channel / note (SYS-05)
+- แก้ไข/ยกเลิกผ่าน RPC `update_web_booking` / `cancel_web_booking` (ตรวจเจ้าของ, สถานะ waiting, ก่อนนัด ≥ 15 นาที, actor = customer) แล้วส่ง email edited / cancelled (แก้ที่ไม่มีอะไรเปลี่ยนไม่ส่ง)
+- email OTP ส่งตรงไม่ผ่าน `after()` เพื่อแจ้งผลได้; บันทึกลง `email_outbox` (template `otp`) โดยไม่เก็บรหัส; ไม่มี Gmail env ใน dev จะพิมพ์รหัสลง log เซิร์ฟเวอร์
+- component ใช้ร่วมหน้าจอง/แก้ไข: `src/app/(customer)/_components/` (`SeatPicker`, `MonthCalendar`, `SlotGrid` + `useSlotLoader`)
+- pg_cron job `customer-auth-cleanup` (ทุก 15 นาที, เวลาจริง) เรียก `cleanup_customer_auth()` ลบ session / OTP ที่หมดอายุ
+- IP rate limit ของการขอ OTP ใช้ `register_booking_attempt` key `otp:<hash>` (10 ครั้ง/10 นาที)
+- ทดสอบใน browser: pane ที่ซ่อนอยู่ไม่ hydrate / swap Suspense จนกว่าจะคลิกในหน้า ให้คลิกก่อนสั่งงานผ่าน JS; รหัส OTP อ่านไม่ได้ ให้คำนวณ HMAC ของ 'เบอร์:123456' ด้วย secret ใน `.env.local` ในเครื่อง (พิมพ์เฉพาะ hash) แล้วแทน `code_hash` ใน DB จากนั้นกรอก 123456
+
 ## สถานะปัจจุบัน
-- Phase 0–3 เสร็จและ push แล้ว; Phase 4 (หน้าลูกค้าจองโต๊ะ) เสร็จและ push แล้ว (commit 0811915)
-- ถัดไป: Phase 5 (ลูกค้าจัดการคิวเอง: OTP) — ต้องเข้า plan mode ก่อน
-- ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; TC-042 รอคุณโดมยืนยันว่าได้รับอีเมล, TC-107 รอหน้าคิวฝั่งลูกค้า (Phase 5), เคส OTP/แก้ไข/ยกเลิก (TC-022–040) รอ Phase 5; Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
+- Phase 0–4 เสร็จและ push แล้ว; Phase 5 (ลูกค้าจัดการคิวเอง: OTP) เสร็จและ commit แล้ว (ยังไม่ push)
+- ถัดไป: Phase 6 (E2E + deploy) — ต้องเข้า plan mode ก่อน
+- ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; TC-042 รอคุณโดมยืนยันว่าได้รับอีเมล, Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
 - TODO(Phase 6): dev กับ production ยังใช้ Supabase project เดียวกัน — ก่อน go-live แยก project ให้ production แล้วตั้ง `PRODUCTION_SUPABASE_URL` เพื่อให้เวลาจำลอง / ปุ่มรันงานปิดตัวเองเมื่อแอปในเครื่องชี้ไป production (`src/lib/dev-tools.ts`)
 
 ## Conventions

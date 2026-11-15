@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/dal";
-import { fieldErrorsFrom, success, type ActionState } from "@/lib/action-state";
+import { fieldErrorsFrom, formText, success, type ActionState } from "@/lib/action-state";
 import { loadSlotOptions, type SlotOptions } from "@/lib/booking/availability";
 import { rpcErrorMessage } from "@/lib/booking/errors";
 import { isValidDate } from "@/lib/booking/format";
@@ -47,22 +47,17 @@ async function duplicatePhoneFailure(phone: string, date: string): Promise<Actio
   };
 }
 
-function text(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value : "";
-}
-
 export async function createBooking(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const profile = await requireRole("staff");
   const parsed = createBookingSchema.safeParse({
-    channel: text(formData, "channel"),
-    date: text(formData, "date"),
-    time: text(formData, "time"),
-    party: text(formData, "party"),
-    name: text(formData, "name"),
-    phone: text(formData, "phone"),
-    email: text(formData, "email").trim(),
-    note: text(formData, "note"),
+    channel: formText(formData, "channel"),
+    date: formText(formData, "date"),
+    time: formText(formData, "time"),
+    party: formText(formData, "party"),
+    name: formText(formData, "name"),
+    phone: formText(formData, "phone"),
+    email: formText(formData, "email").trim(),
+    note: formText(formData, "note"),
   });
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error) };
   const input = parsed.data;
@@ -94,12 +89,12 @@ export async function createBooking(_prev: ActionState, formData: FormData): Pro
 export async function updateBooking(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const profile = await requireRole("staff");
   const parsed = editBookingSchema.safeParse({
-    date: text(formData, "date"),
-    time: text(formData, "time"),
-    party: text(formData, "party"),
-    name: text(formData, "name"),
-    email: text(formData, "email").trim(),
-    note: text(formData, "note"),
+    date: formText(formData, "date"),
+    time: formText(formData, "time"),
+    party: formText(formData, "party"),
+    name: formText(formData, "name"),
+    email: formText(formData, "email").trim(),
+    note: formText(formData, "note"),
   });
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error) };
   const input = parsed.data;

@@ -27,6 +27,8 @@ export async function loadSlotOptions(params: {
   // The public booking page has no session, so it passes the admin client; the default is the
   // signed-in Staff session (RLS).
   client?: SupabaseClient<Database>;
+  // A customer editing their own booking follows the web cutoff, unlike Staff edits.
+  rule?: TimeRule;
 }): Promise<SlotOptions> {
   const { date, party, now, channel, excludeId } = params;
   const today = bangkokNow(now).date;
@@ -48,7 +50,7 @@ export async function loadSlotOptions(params: {
     return { slots: [], reason: "ร้านไม่เปิดทำการในวันที่เลือก" };
   }
 
-  const rule: TimeRule = excludeId ? "edit" : timeRuleFor(channel ?? "phone_in");
+  const rule: TimeRule = params.rule ?? (excludeId ? "edit" : timeRuleFor(channel ?? "phone_in"));
   const all = generateSlots(trimSeconds(hours.open_time), trimSeconds(hours.close_time));
   const timely = all.filter((slot) => isSlotBookable(date, slot, now, rule));
   const bookings: LoadBooking[] = (bookingsRes.data ?? []).map((b) => ({ ...b, start_time: trimSeconds(b.start_time) }));

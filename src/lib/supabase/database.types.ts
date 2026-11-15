@@ -206,6 +206,60 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_otps: {
+        Row: {
+          code_hash: string | null
+          email: string
+          expires_at: string
+          failed_count: number
+          locked_until: string | null
+          phone: string
+          sent_at: string
+        }
+        Insert: {
+          code_hash?: string | null
+          email: string
+          expires_at: string
+          failed_count?: number
+          locked_until?: string | null
+          phone: string
+          sent_at: string
+        }
+        Update: {
+          code_hash?: string | null
+          email?: string
+          expires_at?: string
+          failed_count?: number
+          locked_until?: string | null
+          phone?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
+      customer_sessions: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          phone: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          phone: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          phone?: string
+          token_hash?: string
+        }
+        Relationships: []
+      }
       dining_tables: {
         Row: {
           created_at: string
@@ -372,6 +426,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      cleanup_customer_auth: { Args: { p_now?: string }; Returns: undefined }
       claim_pending_emails: {
         Args: { p_limit?: number }
         Returns: {
@@ -436,6 +491,48 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      cancel_web_booking: {
+        Args: {
+          p_id: string
+          p_now: string
+          p_owner_email: string
+          p_phone: string
+        }
+        Returns: undefined
+      }
+      request_customer_otp: {
+        Args: {
+          p_choice?: number
+          p_code_hash: string
+          p_now: string
+          p_phone: string
+        }
+        Returns: Json
+      }
+      update_web_booking: {
+        Args: {
+          p_date: string
+          p_email: string
+          p_id: string
+          p_name: string
+          p_now: string
+          p_owner_email: string
+          p_party: number
+          p_phone: string
+          p_start: string
+        }
+        Returns: undefined
+      }
+      verify_customer_otp: {
+        Args: {
+          p_code_hash: string
+          p_now: string
+          p_phone: string
+          p_session_expires: string
+          p_session_hash: string
+        }
+        Returns: Json
+      }
       update_booking: {
         Args: {
           p_actor: string
