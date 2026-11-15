@@ -31,7 +31,7 @@
 | 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | เสร็จ (commit ecfe52c) |
 | 4 | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | เสร็จ (commit 0811915) |
 | 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | เสร็จ (commit 7435ec2) |
-| 6 | E2E ทั้งระบบ (Playwright) + deploy Vercel + cron ส่งอีเมล | TSK-056–058 | E2E เสร็จ · รอ deploy |
+| 6 | E2E ทั้งระบบ (Playwright) + deploy Vercel + cron ส่งอีเมล | TSK-056–058 | เสร็จ (deploy commit 3e31311) |
 
 ## Stack & constraints
 - Next.js 16 (App Router, Cache Components เปิดอยู่, `src/proxy.ts` แทน middleware) + Tailwind 4 + TypeScript
@@ -63,7 +63,7 @@
 - ผลข้างเคียงที่ต้องรู้: คิว `waiting` ที่วันนัดผ่านไปแล้วจะถูกปิดเป็น no-show ทันที ข้อมูลทดสอบย้อนหลังจึงอย่าใช้สถานะ `waiting`
 - อีเมลที่ DB เข้าคิว (`email_outbox` status `pending`) ส่งโดย `processPendingEmails()` (`src/lib/email/outbox.ts`) ผ่าน `claim_pending_emails` ที่กันส่งซ้ำ; อีเมลที่ Server Action ส่งทันที (`sendBookingEmail`) เขียนแถวเป็น `sending` เพื่อไม่ให้ worker หยิบซ้ำ
 - `POST /api/jobs/emails` (header `Authorization: Bearer $CRON_SECRET`) เรียก worker ได้ — `CRON_SECRET` คุณโดมใส่เองใน `.env.local`
-- pg_cron job `email-worker` (ทุกนาที) เรียก `run_email_worker()` → `net.http_post` ไป route นี้ เฉพาะเมื่อมีอีเมล `pending` (หรือ `sending` ค้างเกิน 10 นาที); URL และ secret อ่านจาก Vault ชื่อ `jobs_url` / `cron_secret` — ถ้ายังไม่มีจะข้ามเงียบๆ (TODO: คุณโดมสร้าง secret ทั้งสองใน SQL Editor หลัง deploy)
+- pg_cron job `email-worker` (ทุกนาที) เรียก `run_email_worker()` → `net.http_post` ไป route นี้ เฉพาะเมื่อมีอีเมล `pending` (หรือ `sending` ค้างเกิน 10 นาที); URL และ secret อ่านจาก Vault ชื่อ `jobs_url` / `cron_secret` — ถ้ายังไม่มีจะข้ามเงียบๆ (สร้างแล้ว 15/11/2026; จะเปลี่ยน secret ต้องแก้ทั้ง Vercel, `.env.local` และ Vault `cron_secret` ให้ตรงกัน)
 - โหมด dev: ปุ่ม "รันงานตั้งเวลา" บนแถบเวลาจำลองรัน `run_booking_closures` ด้วยเวลาจำลองแล้วส่งอีเมลที่ค้าง (cron จริงรู้เฉพาะเวลาจริง)
 
 ## Dashboard (Phase 3)
@@ -97,8 +97,8 @@
 
 ## สถานะปัจจุบัน
 - Phase 0–4 เสร็จและ push แล้ว; Phase 5 (ลูกค้าจัดการคิวเอง: OTP) เสร็จและ push แล้ว (commit 7435ec2)
-- Phase 6: E2E 11 เคสผ่าน, migration `email_worker_cron` apply แล้ว, สร้าง Vercel project แล้ว — รอ: คุณโดมเชื่อม GitHub กับ Vercel, ใส่ secret env, ตัดสินใจเรื่อง Vercel Authentication, push เพื่อ deploy, สร้าง Vault secrets
-- ค้าง: TC-042 รอคุณโดมยืนยันว่าได้รับอีเมล; ตรวจบน Vercel ว่า `x-real-ip` เป็น IP ผู้ใช้จริง (TODO ใน `client-key.ts`)
+- Phase 6: deploy production แล้ว https://rimlay-restaurant-table-booking.vercel.app (commit 3e31311, sin1) — ทดสอบจริงแล้ว: จอง → OTP → ยกเลิก ส่งอีเมลผ่าน Gmail ครบ, `x-real-ip` = IP ผู้ใช้จริง, `/api/jobs/emails` ตอบ 200 ด้วย CRON_SECRET; cron `email-worker` ทดสอบแล้ว: อีเมล no-show ที่เข้าคิวถูกส่งภายใน 1 นาที (pg_net → 200 `sent: 1`)
+- งานใน Task List เสร็จครบ 62/62 และ Test Case ผ่าน 123/123 (คุณโดมยืนยันว่าได้รับอีเมลจาก production ครบ 15/11/2026)
 - TODO(ก่อนเปิดใช้กับลูกค้าจริง): dev กับ production ใช้ Supabase project เดียวกัน — ก่อน go-live แยก project ให้ production แล้วตั้ง `PRODUCTION_SUPABASE_URL` เพื่อให้เวลาจำลอง / ปุ่มรันงานปิดตัวเองเมื่อแอปในเครื่องชี้ไป production (`src/lib/dev-tools.ts`)
 
 ## Conventions
