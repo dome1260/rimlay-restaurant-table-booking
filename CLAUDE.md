@@ -29,7 +29,7 @@
 | 2A | หลังบ้าน ส่วนที่ 2 (ครึ่งแรก) — schema การจอง, logic slot/quota/EDD (RPC ใน DB), รายการจอง, สร้างคิว walk-in/phone-in, หน้ารายละเอียด + ประวัติสถานะ, จัดโต๊ะ/ปิดโต๊ะ/ยกเลิก/แก้ไข, เวลาจำลอง (dev), email แบบ fallback (บันทึกลง email_outbox) | SYS-01, 02, 05, STF-01–08, ADM-05 | เสร็จ (commit 38176b5) |
 | 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง, เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | เสร็จ (commit f510ed5) |
 | 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | เสร็จ (commit ecfe52c) |
-| 4 | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | เสร็จ (รอ commit) |
+| 4 | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | เสร็จ (commit 0811915) |
 | 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | |
 | 6 | E2E ทั้งระบบ + deploy Vercel | — | |
 
@@ -78,7 +78,7 @@
 - TODO(Phase 6): พิจารณา Cloudflare Turnstile หากบอตยังเป็นปัญหา
 
 ## สถานะปัจจุบัน
-- Phase 0–3 เสร็จและ push แล้ว; Phase 4 (หน้าลูกค้าจองโต๊ะ) เสร็จ รอ commit
+- Phase 0–3 เสร็จและ push แล้ว; Phase 4 (หน้าลูกค้าจองโต๊ะ) เสร็จและ push แล้ว (commit 0811915)
 - ถัดไป: Phase 5 (ลูกค้าจัดการคิวเอง: OTP) — ต้องเข้า plan mode ก่อน
 - ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; TC-042 รอคุณโดมยืนยันว่าได้รับอีเมล, TC-107 รอหน้าคิวฝั่งลูกค้า (Phase 5), เคส OTP/แก้ไข/ยกเลิก (TC-022–040) รอ Phase 5; Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
 - TODO(Phase 6): dev กับ production ยังใช้ Supabase project เดียวกัน — ก่อน go-live แยก project ให้ production แล้วตั้ง `PRODUCTION_SUPABASE_URL` เพื่อให้เวลาจำลอง / ปุ่มรันงานปิดตัวเองเมื่อแอปในเครื่องชี้ไป production (`src/lib/dev-tools.ts`)
