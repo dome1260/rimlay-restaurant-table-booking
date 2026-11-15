@@ -15,6 +15,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          key_hash: string
+        }
+        Insert: {
+          created_at: string
+          id?: never
+          key_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          key_hash?: string
+        }
+        Relationships: []
+      }
       booking_events: {
         Row: {
           actor_id: string | null
@@ -365,6 +383,15 @@ export type Database = {
           to_email: string
         }[]
       }
+      register_booking_attempt: {
+        Args: {
+          p_key: string
+          p_limit: number
+          p_now: string
+          p_window: string
+        }
+        Returns: number
+      }
       run_booking_closures: {
         Args: { p_now?: string }
         Returns: Json
@@ -388,6 +415,18 @@ export type Database = {
           p_email: string
           p_name: string
           p_note: string
+          p_now: string
+          p_party: number
+          p_phone: string
+          p_start: string
+        }
+        Returns: string
+      }
+      create_web_booking: {
+        Args: {
+          p_date: string
+          p_email: string
+          p_name: string
           p_now: string
           p_party: number
           p_phone: string

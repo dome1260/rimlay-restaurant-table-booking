@@ -1,4 +1,6 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { maxQuota, trimSeconds } from "@/lib/store/quota";
 import { addMonths, weekdayOf } from "./format";
@@ -22,6 +24,9 @@ export async function loadSlotOptions(params: {
   channel?: BookingChannel;
   // Editing an existing booking: it doesn't count against itself and Staff skip the cutoff.
   excludeId?: string;
+  // The public booking page has no session, so it passes the admin client; the default is the
+  // signed-in Staff session (RLS).
+  client?: SupabaseClient<Database>;
 }): Promise<SlotOptions> {
   const { date, party, now, channel, excludeId } = params;
   const today = bangkokNow(now).date;
@@ -29,7 +34,7 @@ export async function loadSlotOptions(params: {
     return { slots: [], reason: "เลือกวันที่ได้ตั้งแต่วันนี้ถึงล่วงหน้าไม่เกิน 1 เดือน" };
   }
 
-  const supabase = await createClient();
+  const supabase = params.client ?? (await createClient());
   const [hoursRes, holidayRes, tablesRes, bookingsRes] = await Promise.all([
     supabase.from("business_hours").select("is_open, open_time, close_time").eq("weekday", weekdayOf(date)).maybeSingle(),
     supabase.from("special_holidays").select("id").eq("holiday_date", date).maybeSingle(),

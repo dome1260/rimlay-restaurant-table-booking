@@ -35,8 +35,19 @@ export const createBookingSchema = z.object({
   note,
 });
 
+// CUS-05: the public page needs all three contact fields (the email receives the OTP and notices).
+export const webBookingSchema = z.object({
+  date,
+  time,
+  party,
+  name,
+  phone,
+  email: z.string().trim().min(1, "กรุณากรอกอีเมล").pipe(z.email("รูปแบบอีเมลไม่ถูกต้อง")),
+});
+
 // The phone number and the channel are fixed once a booking exists.
 export const editBookingSchema = z.object({ date, time, party, name, email, note });
 
+export type WebBookingInput = z.infer<typeof webBookingSchema>;
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 export type EditBookingInput = z.infer<typeof editBookingSchema>;

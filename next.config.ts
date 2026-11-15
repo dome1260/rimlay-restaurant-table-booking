@@ -11,10 +11,6 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  // TODO(Phase 4): remove once the customer booking page lives at "/".
-  async redirects() {
-    return [{ source: "/", destination: "/backoffice", permanent: false }];
-  },
 };
 
 export default nextConfig;

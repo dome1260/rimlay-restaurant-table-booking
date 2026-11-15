@@ -29,7 +29,7 @@
 | 2A | หลังบ้าน ส่วนที่ 2 (ครึ่งแรก) — schema การจอง, logic slot/quota/EDD (RPC ใน DB), รายการจอง, สร้างคิว walk-in/phone-in, หน้ารายละเอียด + ประวัติสถานะ, จัดโต๊ะ/ปิดโต๊ะ/ยกเลิก/แก้ไข, เวลาจำลอง (dev), email แบบ fallback (บันทึกลง email_outbox) | SYS-01, 02, 05, STF-01–08, ADM-05 | เสร็จ (commit 38176b5) |
 | 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง, เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | เสร็จ (commit f510ed5) |
 | 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | เสร็จ (commit ecfe52c) |
-| 4 | ลูกค้าจองโต๊ะ (C1–C6) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | |
+| 4 | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | เสร็จ (รอ commit) |
 | 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | |
 | 6 | E2E ทั้งระบบ + deploy Vercel | — | |
 
@@ -69,10 +69,18 @@
 - `/backoffice/dashboard` เฉพาะ Admin: `?view=week|year&at=` — นับตามวันนัด (`booking_date`), สัปดาห์อาทิตย์–เสาร์, ปีมี 12 เดือน, "ถัดไป" ไม่เกินช่วงปัจจุบัน
 - logic รวมผลอยู่ใน `src/lib/booking/dashboard.ts` (pure, มี unit test); กราฟเป็นแท่ง CSS ไม่ใช้ library
 
+## Customer booking (Phase 4)
+- หน้า `/` (`src/app/(customer)/`) ไม่ต้อง login; `proxy.ts` ครอบเฉพาะ `/backoffice` ลูกค้าไม่มี session จึงอ่านข้อมูลผ่าน Server Action ด้วย admin client (ไม่เปิด RLS ให้ anon) และคืนเฉพาะ slot / วันหยุด ไม่มีข้อมูลลูกค้า
+- `getPublicSlots` ใช้ `loadSlotOptions({client: admin, channel: "web"})`; `createWebBooking` ตรวจ honeypot → zod (`webBookingSchema`, email บังคับ) → `register_booking_attempt` (5 ครั้ง/10 นาที/IP จาก `x-real-ip` หรือ hop สุดท้ายของ `x-forwarded-for`, เก็บเฉพาะ hash; ถูกปฏิเสธตามกฎการจองจะคืนสิทธิ์; ไม่รู้ IP = ข้าม limit) → `create_web_booking` (RPC เฉพาะลูกค้า: channel web, ไม่มี actor/หมายเหตุ แล้วเรียก `create_booking`) → `sendBookingEmail(id, "created")`
+- หน้าจองสำเร็จแสดงในหน้าเดิมจาก state ไม่มี URL ที่มี id; ข้อความเบอร์ซ้ำไม่เปิดเผยรายละเอียดคิวเดิม
+- ที่อยู่/เบอร์ร้านใน footer เป็น placeholder ว่างใน `src/lib/store/info.ts` (TODO รอข้อมูลจริง); เวลาทำการดึงจาก DB
+- TODO(Phase 5): เมนู "ค้นหาคิวของฉัน" และปุ่ม "จัดการคิวของฉัน" (C3–C4) ซ่อนไว้
+- TODO(Phase 6): พิจารณา Cloudflare Turnstile หากบอตยังเป็นปัญหา
+
 ## สถานะปัจจุบัน
-- Phase 0–3 เสร็จและ push ขึ้น GitHub แล้ว (ล่าสุด ecfe52c); หลังบ้านครบทุกฟีเจอร์
-- ถัดไป: Phase 4 (ฝั่งลูกค้าจองโต๊ะ) — ต้องเข้า plan mode ก่อน
-- ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; เคสฝั่งลูกค้ารอ Phase 4/5; Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
+- Phase 0–3 เสร็จและ push แล้ว; Phase 4 (หน้าลูกค้าจองโต๊ะ) เสร็จ รอ commit
+- ถัดไป: Phase 5 (ลูกค้าจัดการคิวเอง: OTP) — ต้องเข้า plan mode ก่อน
+- ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; TC-042 รอคุณโดมยืนยันว่าได้รับอีเมล, TC-107 รอหน้าคิวฝั่งลูกค้า (Phase 5), เคส OTP/แก้ไข/ยกเลิก (TC-022–040) รอ Phase 5; Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
 - TODO(Phase 6): dev กับ production ยังใช้ Supabase project เดียวกัน — ก่อน go-live แยก project ให้ production แล้วตั้ง `PRODUCTION_SUPABASE_URL` เพื่อให้เวลาจำลอง / ปุ่มรันงานปิดตัวเองเมื่อแอปในเครื่องชี้ไป production (`src/lib/dev-tools.ts`)
 
 ## Conventions

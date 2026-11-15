@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createBookingSchema, editBookingSchema } from "./schema";
+import { createBookingSchema, editBookingSchema, webBookingSchema } from "./schema";
 
 const valid = {
   channel: "walk_in",
@@ -54,5 +54,33 @@ describe("editBookingSchema (STF-08)", () => {
     const parsed = editBookingSchema.safeParse({ ...valid, phone: "0999999999" });
     expect(parsed.success).toBe(true);
     if (parsed.success) expect("phone" in parsed.data).toBe(false);
+  });
+});
+
+describe("webBookingSchema", () => {
+  const base = { date: "2026-11-20", time: "18:00", party: "4", name: "สมชาย", phone: "081-234-5678", email: "a@b.co" };
+
+  it("normalizes the phone number and coerces the party size", () => {
+    const parsed = webBookingSchema.parse(base);
+    expect(parsed.phone).toBe("0812345678");
+    expect(parsed.party).toBe(4);
+  });
+  it("requires an email in a valid format", () => {
+    const empty = webBookingSchema.safeParse({ ...base, email: "" });
+    expect(empty.success ? "" : empty.error.issues[0].message).toBe("กรุณากรอกอีเมล");
+    expect(webBookingSchema.safeParse({ ...base, email: "no-at-sign" }).success).toBe(false);
+  });
+  it("rejects landlines, foreign numbers and wrong lengths", () => {
+    for (const phone of ["021234567", "+66812345678", "08123456", "08123abc78"]) {
+      expect(webBookingSchema.safeParse({ ...base, phone }).success).toBe(false);
+    }
+  });
+  it("rejects party sizes outside 1-8", () => {
+    for (const party of ["0", "9"]) expect(webBookingSchema.safeParse({ ...base, party }).success).toBe(false);
+  });
+  it("requires a name, a date and a time", () => {
+    expect(webBookingSchema.safeParse({ ...base, name: " " }).success).toBe(false);
+    expect(webBookingSchema.safeParse({ ...base, date: "" }).success).toBe(false);
+    expect(webBookingSchema.safeParse({ ...base, time: "" }).success).toBe(false);
   });
 });
