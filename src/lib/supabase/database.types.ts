@@ -451,6 +451,7 @@ export type Database = {
         Args: { p_now?: string }
         Returns: Json
       }
+      run_email_worker: { Args: never; Returns: undefined }
       change_booking_status: {
         Args: {
           p_actor: string

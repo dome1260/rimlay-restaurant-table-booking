@@ -31,7 +31,7 @@
 | 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | เสร็จ (commit ecfe52c) |
 | 4 | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | เสร็จ (commit 0811915) |
 | 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | เสร็จ (commit 7435ec2) |
-| 6 | E2E ทั้งระบบ + deploy Vercel | — | |
+| 6 | E2E ทั้งระบบ (Playwright) + deploy Vercel + cron ส่งอีเมล | TSK-056–058 | E2E เสร็จ · รอ deploy |
 
 ## Stack & constraints
 - Next.js 16 (App Router, Cache Components เปิดอยู่, `src/proxy.ts` แทน middleware) + Tailwind 4 + TypeScript
@@ -42,13 +42,14 @@
 - Key ทั้งหมดอยู่ใน `.env.local` เท่านั้น ห้าม commit; `SUPABASE_SECRET_KEY` คุณโดมใส่เอง ห้ามขอในแชท
 - Back-office login = username + email จริง (ค้นหา email ฝั่ง server ด้วย secret key)
 - เวลาทั้งระบบใช้ Asia/Bangkok; เคสที่ต้องรอเวลาใช้ "เวลาจำลอง" เฉพาะ dev และระบุในผลทดสอบ
-- Vercel = เป้าหมาย deploy (ยังไม่เชื่อมจนถึง Phase 6)
+- Vercel project `rimlay-restaurant-table-booking` (ทีม dddee1260-3007, region sin1 จาก `vercel.json`) — dev กับ production ใช้ Supabase project เดียวกัน (ตัดสินใจใน Phase 6)
 
 ## Commands
 - `npm run dev` — dev server http://localhost:3000
 - `npm test` — Vitest unit tests (`src/**/*.test.ts`)
 - `npm run lint` / `npm run typecheck` / `npx next build`
 - `npm run seed` — สร้าง/อัปเดตบัญชีทดสอบ admin01, staff01 (อ่านค่าจาก `.env.local`, รันซ้ำได้)
+- `npm run e2e` — Playwright (Chromium) เปิด `next dev` ของตัวเองที่พอร์ต 3100 (`NEXT_DIST_DIR=.next-e2e` จึงรันคู่กับ dev server ปกติได้) โดยปิด Gmail
 - `npm run seed:store` — ใส่โต๊ะ T1–T5 (4 ที่นั่ง) และเวลาทำการ 11:00–22:00 เฉพาะตารางที่ยังว่าง (ข้อมูลตัวอย่าง รอแทนด้วยข้อมูลจริงของร้าน)
 
 ## Booking rules live in the database
@@ -62,7 +63,7 @@
 - ผลข้างเคียงที่ต้องรู้: คิว `waiting` ที่วันนัดผ่านไปแล้วจะถูกปิดเป็น no-show ทันที ข้อมูลทดสอบย้อนหลังจึงอย่าใช้สถานะ `waiting`
 - อีเมลที่ DB เข้าคิว (`email_outbox` status `pending`) ส่งโดย `processPendingEmails()` (`src/lib/email/outbox.ts`) ผ่าน `claim_pending_emails` ที่กันส่งซ้ำ; อีเมลที่ Server Action ส่งทันที (`sendBookingEmail`) เขียนแถวเป็น `sending` เพื่อไม่ให้ worker หยิบซ้ำ
 - `POST /api/jobs/emails` (header `Authorization: Bearer $CRON_SECRET`) เรียก worker ได้ — `CRON_SECRET` คุณโดมใส่เองใน `.env.local`
-- TODO(Phase 6): หลัง deploy ให้ pg_cron + pg_net เรียก route นี้ทุกนาที (เก็บ URL/secret ใน Supabase Vault) ตอนนี้ไม่มีอะไรเรียกอัตโนมัติ — อีเมล no-show ที่ค้างจะไม่ถูกส่งจนกว่าจะกดปุ่ม "รันงานตั้งเวลา" (dev) หรือเรียก route เอง
+- pg_cron job `email-worker` (ทุกนาที) เรียก `run_email_worker()` → `net.http_post` ไป route นี้ เฉพาะเมื่อมีอีเมล `pending` (หรือ `sending` ค้างเกิน 10 นาที); URL และ secret อ่านจาก Vault ชื่อ `jobs_url` / `cron_secret` — ถ้ายังไม่มีจะข้ามเงียบๆ (TODO: คุณโดมสร้าง secret ทั้งสองใน SQL Editor หลัง deploy)
 - โหมด dev: ปุ่ม "รันงานตั้งเวลา" บนแถบเวลาจำลองรัน `run_booking_closures` ด้วยเวลาจำลองแล้วส่งอีเมลที่ค้าง (cron จริงรู้เฉพาะเวลาจริง)
 
 ## Dashboard (Phase 3)
@@ -74,7 +75,7 @@
 - `getPublicSlots` ใช้ `loadSlotOptions({client: admin, channel: "web"})`; `createWebBooking` ตรวจ honeypot → zod (`webBookingSchema`, email บังคับ) → `register_booking_attempt` (5 ครั้ง/10 นาที/IP จาก `x-real-ip` หรือ hop สุดท้ายของ `x-forwarded-for`, เก็บเฉพาะ hash; ถูกปฏิเสธตามกฎการจองจะคืนสิทธิ์; ไม่รู้ IP = ข้าม limit) → `create_web_booking` (RPC เฉพาะลูกค้า: channel web, ไม่มี actor/หมายเหตุ แล้วเรียก `create_booking`) → `sendBookingEmail(id, "created")`
 - หน้าจองสำเร็จแสดงในหน้าเดิมจาก state ไม่มี URL ที่มี id; ข้อความเบอร์ซ้ำไม่เปิดเผยรายละเอียดคิวเดิม
 - ที่อยู่/เบอร์ร้านใน footer เป็น placeholder ว่างใน `src/lib/store/info.ts` (TODO รอข้อมูลจริง); เวลาทำการดึงจาก DB
-- TODO(Phase 6): พิจารณา Cloudflare Turnstile หากบอตยังเป็นปัญหา
+- TODO(หลัง go-live): พิจารณา Cloudflare Turnstile หากบอตยังเป็นปัญหา
 
 ## Customer self-manage (Phase 5)
 - หน้า `/my-booking` (`src/app/(customer)/my-booking/`): กรอกเบอร์ → OTP ทางอีเมล → "คิวของฉัน" (แก้ไข/ยกเลิก); เมนูบน header + ปุ่ม "จัดการคิวของฉัน" ในหน้าจองสำเร็จ
@@ -88,11 +89,17 @@
 - IP rate limit ของการขอ OTP ใช้ `register_booking_attempt` key `otp:<hash>` (10 ครั้ง/10 นาที)
 - ทดสอบใน browser: pane ที่ซ่อนอยู่ไม่ hydrate / swap Suspense จนกว่าจะคลิกในหน้า ให้คลิกก่อนสั่งงานผ่าน JS; รหัส OTP อ่านไม่ได้ ให้คำนวณ HMAC ของ 'เบอร์:123456' ด้วย secret ใน `.env.local` ในเครื่อง (พิมพ์เฉพาะ hash) แล้วแทน `code_hash` ใน DB จากนั้นกรอก 123456
 
+## E2E (Phase 6)
+- spec อยู่ใน `e2e/` (`customer.spec.ts` = TSK-056, `backoffice.spec.ts` = TSK-057) ใช้ DB จริงร่วมกับ production จึงรันทีละไฟล์ (workers 1)
+- ข้อมูลทดสอบใช้เบอร์ `0999990xxx` / อีเมล `e2e+N@example.com` และถูกลบใน `cleanupTestData()` ก่อนและหลังรัน (รวม rate limit ของ IP loopback); เคสที่เปลี่ยนเวลาทำการ/วันหยุด snapshot แล้วคืนค่าเดิมเสมอ
+- OTP: เทสต์เขียน HMAC ของ `123456` ลง `customer_otps` เองใน process ของเทสต์; login หลังบ้านอ่าน `SEED_TEST_PASSWORD` จาก `.env.local`
+- TC-102 (ตัวอย่างบรีฟหัวข้อ 7) ทดสอบทั้ง unit test (`quota.test.ts`) และระดับ RPC (เพิ่มโต๊ะชั่วคราว 20 ที่นั่งให้ครบ 40 แล้วลบ)
+
 ## สถานะปัจจุบัน
 - Phase 0–4 เสร็จและ push แล้ว; Phase 5 (ลูกค้าจัดการคิวเอง: OTP) เสร็จและ push แล้ว (commit 7435ec2)
-- ถัดไป: Phase 6 (E2E + deploy) — ต้องเข้า plan mode ก่อน
-- ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; TC-042 รอคุณโดมยืนยันว่าได้รับอีเมล, Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
-- TODO(Phase 6): dev กับ production ยังใช้ Supabase project เดียวกัน — ก่อน go-live แยก project ให้ production แล้วตั้ง `PRODUCTION_SUPABASE_URL` เพื่อให้เวลาจำลอง / ปุ่มรันงานปิดตัวเองเมื่อแอปในเครื่องชี้ไป production (`src/lib/dev-tools.ts`)
+- Phase 6: E2E 11 เคสผ่าน, migration `email_worker_cron` apply แล้ว, สร้าง Vercel project แล้ว — รอ: คุณโดมเชื่อม GitHub กับ Vercel, ใส่ secret env, ตัดสินใจเรื่อง Vercel Authentication, push เพื่อ deploy, สร้าง Vault secrets
+- ค้าง: TC-042 รอคุณโดมยืนยันว่าได้รับอีเมล; ตรวจบน Vercel ว่า `x-real-ip` เป็น IP ผู้ใช้จริง (TODO ใน `client-key.ts`)
+- TODO(ก่อนเปิดใช้กับลูกค้าจริง): dev กับ production ใช้ Supabase project เดียวกัน — ก่อน go-live แยก project ให้ production แล้วตั้ง `PRODUCTION_SUPABASE_URL` เพื่อให้เวลาจำลอง / ปุ่มรันงานปิดตัวเองเมื่อแอปในเครื่องชี้ไป production (`src/lib/dev-tools.ts`)
 
 ## Conventions
 

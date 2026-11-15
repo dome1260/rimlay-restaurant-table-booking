@@ -3,8 +3,7 @@ import { NextResponse } from "next/server";
 import { processPendingEmails } from "@/lib/email/outbox";
 
 // Sends the emails queued by the database jobs. Protected by CRON_SECRET (Bearer token).
-// TODO(Phase 6): once deployed, have pg_cron + pg_net call this route every minute (keep the URL
-// and secret in Supabase Vault). Until then it is only called by hand / the dev "run jobs" button.
+// Called every minute by pg_cron job `email-worker` (pg_net, URL + secret in Supabase Vault).
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
   const sent = request.headers.get("authorization") ?? "";

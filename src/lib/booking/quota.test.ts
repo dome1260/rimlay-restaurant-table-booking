@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { availableSlots, fitsQuota, loadAt, type LoadBooking } from "./quota";
+import { generateSlots } from "./slots";
 
 const b = (start_time: string, party_size: number, status: LoadBooking["status"] = "waiting", id?: string): LoadBooking => ({
   id,
@@ -64,5 +65,31 @@ describe("availableSlots (TC-010, TC-011)", () => {
     const four = availableSlots(slots, list, 4, 20);
     expect(six).not.toContain("19:00");
     expect(four).toContain("19:00");
+  });
+});
+
+describe("brief section 7 worked example (TC-102)", () => {
+  const open = generateSlots("11:00", "22:00");
+  const list = [b("18:00", 8, "waiting", "A"), b("19:00", 6, "waiting", "B")];
+
+  it("has slots 11:00 to 20:00 for a shop open 11:00-22:00", () => {
+    expect(open[0]).toBe("11:00");
+    expect(open.at(-1)).toBe("20:00");
+  });
+
+  it("finds the busiest point of 19:30-21:30 at 19:30 with A+B = 14 seats", () => {
+    const loads = [19.5, 20, 20.5, 21].map((h) => loadAt(list, h * 60));
+    expect(loads).toEqual([14, 6, 6, 0]);
+  });
+
+  it("leaves 40 - 14 = 26 seats at 19:30", () => {
+    expect(fitsQuota(list, "19:30", 26, 40)).toBe(true);
+    expect(fitsQuota(list, "19:30", 27, 40)).toBe(false);
+  });
+
+  it("returns A's seats as soon as staff close its table at 19:15", () => {
+    const afterClose = [b("18:00", 8, "closed", "A"), b("19:00", 6, "waiting", "B")];
+    expect(loadAt(afterClose, 19.5 * 60)).toBe(6);
+    expect(fitsQuota(afterClose, "19:30", 34, 40)).toBe(true);
   });
 });
