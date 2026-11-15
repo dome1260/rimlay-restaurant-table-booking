@@ -30,7 +30,7 @@
 | 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง, เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | เสร็จ (commit f510ed5) |
 | 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | เสร็จ (commit ecfe52c) |
 | 4 | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | เสร็จ (commit 0811915) |
-| 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | เสร็จ |
+| 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | เสร็จ (commit 7435ec2) |
 | 6 | E2E ทั้งระบบ + deploy Vercel | — | |
 
 ## Stack & constraints
@@ -89,7 +89,7 @@
 - ทดสอบใน browser: pane ที่ซ่อนอยู่ไม่ hydrate / swap Suspense จนกว่าจะคลิกในหน้า ให้คลิกก่อนสั่งงานผ่าน JS; รหัส OTP อ่านไม่ได้ ให้คำนวณ HMAC ของ 'เบอร์:123456' ด้วย secret ใน `.env.local` ในเครื่อง (พิมพ์เฉพาะ hash) แล้วแทน `code_hash` ใน DB จากนั้นกรอก 123456
 
 ## สถานะปัจจุบัน
-- Phase 0–4 เสร็จและ push แล้ว; Phase 5 (ลูกค้าจัดการคิวเอง: OTP) เสร็จและ commit แล้ว (ยังไม่ push)
+- Phase 0–4 เสร็จและ push แล้ว; Phase 5 (ลูกค้าจัดการคิวเอง: OTP) เสร็จและ push แล้ว (commit 7435ec2)
 - ถัดไป: Phase 6 (E2E + deploy) — ต้องเข้า plan mode ก่อน
 - ค้าง: TC-102 รอตัวอย่างจากบรีฟหัวข้อ 7; TC-042 รอคุณโดมยืนยันว่าได้รับอีเมล, Phase 6 ต้องผูก pg_cron + pg_net เรียก `/api/jobs/emails`
 - TODO(Phase 6): dev กับ production ยังใช้ Supabase project เดียวกัน — ก่อน go-live แยก project ให้ production แล้วตั้ง `PRODUCTION_SUPABASE_URL` เพื่อให้เวลาจำลอง / ปุ่มรันงานปิดตัวเองเมื่อแอปในเครื่องชี้ไป production (`src/lib/dev-tools.ts`)
