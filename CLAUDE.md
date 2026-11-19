@@ -5,6 +5,7 @@
 ระบบจองโต๊ะร้าน Rimlay แบบ full-stack: หน้าลูกค้าจองโต๊ะ (ไม่ต้อง login) + ระบบหลังบ้าน Staff / Admin
 
 ## Sources of truth
+
 - **Feature Spec / Test Case**: Google Sheet "Restaurant Table Booking – Feature Spec"
   `1B5y0rEyopLBP-skREK-ArsgDo6VzCHhWvFCYwuTSOxg` — tabs: Feature Spec (0), Booking Status (1), System Rules (2), Open Questions (3), Task List (4), Test Case (5)
 - **User journey**: Miro board https://miro.com/app/board/uXjVEQakB8s=/
@@ -13,6 +14,7 @@
 - ห้ามเดา requirement หรือผลการทดสอบ — ถ้าไม่ชัดให้ถามคุณโดม
 
 ## Agent workflow (ทำทุก Phase)
+
 1. เข้า **plan mode** วางแผน Phase นั้น แล้วรอคุณโดมรีวิวว่าผ่านก่อนจึงลงมือ
 2. เขียนโค้ด แล้วทำ **unit test ให้ผ่านทั้งหมด** พร้อม `npm run lint`, `npm run typecheck`, `next build` ไม่มี error
 3. **เปิด browser ทดสอบจริง** แล้วบันทึกผลที่ได้จริงลงแท็บ Test Case ในชีต
@@ -20,20 +22,22 @@
 4. **สรุปผล** ให้คุณโดม แล้ว**ขออนุญาตก่อน commit / push ทุกครั้ง**
 
 ## Phases
+
 ลำดับ: ทำหลังบ้าน (Admin + Staff) ให้เสร็จก่อน แล้วจึงทำฝั่งลูกค้า (ปรับแผน 2026-11-14)
 
-| Phase | ขอบเขต | Feature | สถานะ |
-|---|---|---|---|
-| 0 | Login หลังบ้าน + หน้าหลัก 1 หน้า, profiles + RLS, brand + โลโก้ | BO-01 | เสร็จ |
-| 1 | หลังบ้าน ส่วนที่ 1 — ตั้งค่าร้าน + ผู้ใช้: โต๊ะ, เวลาทำการ, วันหยุดพิเศษ, จัดการผู้ใช้, ลบบัญชีตัวเอง | ADM-01, 02, 03, 06, 07 | เสร็จ (ผลทดสอบบันทึกในชีตแล้ว) |
-| 2A | หลังบ้าน ส่วนที่ 2 (ครึ่งแรก) — schema การจอง, logic slot/quota/EDD (RPC ใน DB), รายการจอง, สร้างคิว walk-in/phone-in, หน้ารายละเอียด + ประวัติสถานะ, จัดโต๊ะ/ปิดโต๊ะ/ยกเลิก/แก้ไข, เวลาจำลอง (dev), email แบบ fallback (บันทึกลง email_outbox) | SYS-01, 02, 05, STF-01–08, ADM-05 | เสร็จ (commit 38176b5) |
-| 2B | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง, เมนู "เพิ่มเติม" บนมือถือ | ADM-04, 08 + email | เสร็จ (commit f510ed5) |
-| 3 | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard | SYS-03, 04, ADM-09, 10, 11 | เสร็จ (commit ecfe52c) |
-| 4 | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก | CUS-01–06, 12 | เสร็จ (commit 0811915) |
-| 5 | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก | CUS-07–11 | เสร็จ (commit 7435ec2) |
-| 6 | E2E ทั้งระบบ (Playwright) + deploy Vercel + cron ส่งอีเมล | TSK-056–058 | เสร็จ (deploy commit 3e31311) |
+| Phase | ขอบเขต                                                                                                                                                                                                                                          | Feature                           | สถานะ                          |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------ |
+| 0     | Login หลังบ้าน + หน้าหลัก 1 หน้า, profiles + RLS, brand + โลโก้                                                                                                                                                                                 | BO-01                             | เสร็จ                          |
+| 1     | หลังบ้าน ส่วนที่ 1 — ตั้งค่าร้าน + ผู้ใช้: โต๊ะ, เวลาทำการ, วันหยุดพิเศษ, จัดการผู้ใช้, ลบบัญชีตัวเอง                                                                                                                                           | ADM-01, 02, 03, 06, 07            | เสร็จ (ผลทดสอบบันทึกในชีตแล้ว) |
+| 2A    | หลังบ้าน ส่วนที่ 2 (ครึ่งแรก) — schema การจอง, logic slot/quota/EDD (RPC ใน DB), รายการจอง, สร้างคิว walk-in/phone-in, หน้ารายละเอียด + ประวัติสถานะ, จัดโต๊ะ/ปิดโต๊ะ/ยกเลิก/แก้ไข, เวลาจำลอง (dev), email แบบ fallback (บันทึกลง email_outbox) | SYS-01, 02, 05, STF-01–08, ADM-05 | เสร็จ (commit 38176b5)         |
+| 2B    | หลังบ้าน ส่วนที่ 2 (ครึ่งหลัง) — Calendar + Modal "เพิ่มเติม", เตือนคิวที่กระทบก่อนบันทึกตั้งค่า (ปิด TODO ADM-08), ต่อ Gmail SMTP + Nodemailer จริง, เมนู "เพิ่มเติม" บนมือถือ                                                                 | ADM-04, 08 + email                | เสร็จ (commit f510ed5)         |
+| 3     | Scheduled jobs (no-show, ปิดสถานะตอนร้านปิด — pg_cron) + Dashboard                                                                                                                                                                              | SYS-03, 04, ADM-09, 10, 11        | เสร็จ (commit ecfe52c)         |
+| 4     | ลูกค้าจองโต๊ะ (C1–C2 จองและจองสำเร็จ) ใช้ logic/email จาก Phase 2, เอา redirect `/` ชั่วคราวออก                                                                                                                                                 | CUS-01–06, 12                     | เสร็จ (commit 0811915)         |
+| 5     | ลูกค้าจัดการคิวเอง: OTP, ล็อกเบอร์, แก้ไข/ยกเลิก                                                                                                                                                                                                | CUS-07–11                         | เสร็จ (commit 7435ec2)         |
+| 6     | E2E ทั้งระบบ (Playwright) + deploy Vercel + cron ส่งอีเมล                                                                                                                                                                                       | TSK-056–058                       | เสร็จ (deploy commit 3e31311)  |
 
 ## Stack & constraints
+
 - Next.js 16 (App Router, Cache Components เปิดอยู่, `src/proxy.ts` แทน middleware) + Tailwind 4 + TypeScript
   — อ่าน `node_modules/next/dist/docs/` ก่อนเขียนโค้ด Next ทุกครั้ง; ส่วนที่อ่าน session/cookies ต้องอยู่ใน `<Suspense>`
 - Supabase บน cloud (project `rimlay-booking`, ap-southeast-1) — **ไม่ใช้ Supabase local**
@@ -45,6 +49,7 @@
 - Vercel project `rimlay-restaurant-table-booking` (ทีม dddee1260-3007, region sin1 จาก `vercel.json`) — dev กับ production ใช้ Supabase project เดียวกัน (ตัดสินใจใน Phase 6)
 
 ## Commands
+
 - `npm run dev` — dev server http://localhost:3000
 - `npm test` — Vitest unit tests (`src/**/*.test.ts`)
 - `npm run lint` / `npm run typecheck` / `npx next build`
@@ -53,12 +58,14 @@
 - `npm run seed:store` — ใส่โต๊ะ T1–T5 (4 ที่นั่ง) และเวลาทำการ 11:00–22:00 เฉพาะตารางที่ยังว่าง (ข้อมูลตัวอย่าง รอแทนด้วยข้อมูลจริงของร้าน)
 
 ## Booking rules live in the database
+
 - ทุกการเขียนคิวผ่าน RPC (`create_booking`, `update_booking`, `change_booking_status`, `assign_tables`) เรียกด้วย secret key จาก Server Action หลัง `requireRole` — ห้ามเขียนตาราง `bookings` ตรงๆ; logic ฝั่ง `src/lib/booking/` ใช้แสดงผลเท่านั้น DB ตรวจซ้ำเสมอ
 - เวลา "ตอนนี้" ของฝั่ง server ต้องมาจาก `getNow()` (`src/lib/clock.ts`); โหมด dev ตั้งเวลาจำลองได้จากแถบบนหน้าหลังบ้าน (production ไม่อ่าน cookie นี้)
 - Email: ส่งผ่าน Gmail SMTP (Nodemailer) เมื่อมี `GMAIL_USER` / `GMAIL_APP_PASSWORD` โดยเรียกใน `after()` และบันทึกผลลง `email_outbox` (`sent` / `failed`); ถ้าไม่มี env บันทึกเป็น `skipped`
 - ADM-08: เปลี่ยนเวลาทำการ/วันหยุด/ปิดโต๊ะ/ลดที่นั่ง จะไม่บันทึกจนกว่า Admin ยืนยันรายการคิวที่กระทบ (`src/lib/booking/affected.ts`) คิวเดิมไม่ถูกยกเลิกอัตโนมัติ
 
 ## Scheduled jobs (Phase 3)
+
 - pg_cron job `booking-closures` รันทุกนาทีด้วย**เวลาจริง** เรียก `run_booking_closures()`: คิว `waiting` เลยนัด 15 นาที → `system_closed` (SYS-03, มีอีเมล no-show เข้าคิว) และคิวที่ยังไม่สุดท้ายเมื่อร้านปิด → `system_closed` ไม่ส่งอีเมล (SYS-04); วันที่ไม่มีเวลาปิด (วันปิด/วันหยุดที่ตั้งภายหลัง) ใช้ `ends_at` ของคิวแทน
 - ผลข้างเคียงที่ต้องรู้: คิว `waiting` ที่วันนัดผ่านไปแล้วจะถูกปิดเป็น no-show ทันที ข้อมูลทดสอบย้อนหลังจึงอย่าใช้สถานะ `waiting`
 - อีเมลที่ DB เข้าคิว (`email_outbox` status `pending`) ส่งโดย `processPendingEmails()` (`src/lib/email/outbox.ts`) ผ่าน `claim_pending_emails` ที่กันส่งซ้ำ; อีเมลที่ Server Action ส่งทันที (`sendBookingEmail`) เขียนแถวเป็น `sending` เพื่อไม่ให้ worker หยิบซ้ำ
@@ -67,10 +74,12 @@
 - โหมด dev: ปุ่ม "รันงานตั้งเวลา" บนแถบเวลาจำลองรัน `run_booking_closures` ด้วยเวลาจำลองแล้วส่งอีเมลที่ค้าง (cron จริงรู้เฉพาะเวลาจริง)
 
 ## Dashboard (Phase 3)
+
 - `/backoffice/dashboard` เฉพาะ Admin: `?view=week|year&at=` — นับตามวันนัด (`booking_date`), สัปดาห์อาทิตย์–เสาร์, ปีมี 12 เดือน, "ถัดไป" ไม่เกินช่วงปัจจุบัน
 - logic รวมผลอยู่ใน `src/lib/booking/dashboard.ts` (pure, มี unit test); กราฟเป็นแท่ง CSS ไม่ใช้ library
 
 ## Customer booking (Phase 4)
+
 - หน้า `/` (`src/app/(customer)/`) ไม่ต้อง login; `proxy.ts` ครอบเฉพาะ `/backoffice` ลูกค้าไม่มี session จึงอ่านข้อมูลผ่าน Server Action ด้วย admin client (ไม่เปิด RLS ให้ anon) และคืนเฉพาะ slot / วันหยุด ไม่มีข้อมูลลูกค้า
 - `getPublicSlots` ใช้ `loadSlotOptions({client: admin, channel: "web"})`; `createWebBooking` ตรวจ honeypot → zod (`webBookingSchema`, email บังคับ) → `register_booking_attempt` (5 ครั้ง/10 นาที/IP จาก `x-real-ip` หรือ hop สุดท้ายของ `x-forwarded-for`, เก็บเฉพาะ hash; ถูกปฏิเสธตามกฎการจองจะคืนสิทธิ์; ไม่รู้ IP = ข้าม limit) → `create_web_booking` (RPC เฉพาะลูกค้า: channel web, ไม่มี actor/หมายเหตุ แล้วเรียก `create_booking`) → `sendBookingEmail(id, "created")`
 - หน้าจองสำเร็จแสดงในหน้าเดิมจาก state ไม่มี URL ที่มี id; ข้อความเบอร์ซ้ำไม่เปิดเผยรายละเอียดคิวเดิม
@@ -78,6 +87,7 @@
 - TODO(หลัง go-live): พิจารณา Cloudflare Turnstile หากบอตยังเป็นปัญหา
 
 ## Customer self-manage (Phase 5)
+
 - หน้า `/my-booking` (`src/app/(customer)/my-booking/`): กรอกเบอร์ → OTP ทางอีเมล → "คิวของฉัน" (แก้ไข/ยกเลิก); เมนูบน header + ปุ่ม "จัดการคิวของฉัน" ในหน้าจองสำเร็จ
 - OTP/session อยู่ใน DB (`customer_otps` แถวเดียวต่อเบอร์, `customer_sessions`) เรียกผ่าน RPC `request_customer_otp` / `verify_customer_otp` ด้วย admin client เท่านั้น: 6 หลัก อายุ 5 นาที, ขอใหม่ได้ทุก 60 วินาที (รหัสเก่าตายทันที), ผิดครบ 5 ครั้ง (นับข้ามรหัสที่ยังไม่หมดอายุ) ล็อกเบอร์ 15 นาที; เก็บเฉพาะ HMAC-SHA256(เบอร์:รหัส) ที่ใช้ `SUPABASE_SECRET_KEY` เป็นกุญแจ
 - ขอบเขตที่ลูกค้าเห็น/จัดการ = **เบอร์ + อีเมลเดียวกัน** (ไม่สนตัวพิมพ์): อีเมลที่รับ OTP ได้ = อีเมลของคิวที่ยังไม่จบของเบอร์ (ถ้าไม่มี ใช้คิวใน 30 วันล่าสุด) ถ้ามีหลายอีเมล ลูกค้าเลือกจากรายการแบบ mask (กันคนอื่นจองเบอร์เราด้วยอีเมลตัวเองแล้วแย่ง OTP); ไม่พบคิว / มีแต่คิวไม่มีอีเมล = ข้อความเดียวกัน ไม่ส่ง OTP; แก้อีเมลของคิว = คิวย้ายไปผูกกับอีเมลใหม่และหายจากรายการนี้
@@ -90,12 +100,14 @@
 - ทดสอบใน browser: pane ที่ซ่อนอยู่ไม่ hydrate / swap Suspense จนกว่าจะคลิกในหน้า ให้คลิกก่อนสั่งงานผ่าน JS; รหัส OTP อ่านไม่ได้ ให้คำนวณ HMAC ของ 'เบอร์:123456' ด้วย secret ใน `.env.local` ในเครื่อง (พิมพ์เฉพาะ hash) แล้วแทน `code_hash` ใน DB จากนั้นกรอก 123456
 
 ## E2E (Phase 6)
+
 - spec อยู่ใน `e2e/` (`customer.spec.ts` = TSK-056, `backoffice.spec.ts` = TSK-057) ใช้ DB จริงร่วมกับ production จึงรันทีละไฟล์ (workers 1)
 - ข้อมูลทดสอบใช้เบอร์ `0999990xxx` / อีเมล `e2e+N@example.com` และถูกลบใน `cleanupTestData()` ก่อนและหลังรัน (รวม rate limit ของ IP loopback); เคสที่เปลี่ยนเวลาทำการ/วันหยุด snapshot แล้วคืนค่าเดิมเสมอ
 - OTP: เทสต์เขียน HMAC ของ `123456` ลง `customer_otps` เองใน process ของเทสต์; login หลังบ้านอ่าน `SEED_TEST_PASSWORD` จาก `.env.local`
 - TC-102 (ตัวอย่างบรีฟหัวข้อ 7) ทดสอบทั้ง unit test (`quota.test.ts`) และระดับ RPC (เพิ่มโต๊ะชั่วคราว 20 ที่นั่งให้ครบ 40 แล้วลบ)
 
 ## สถานะปัจจุบัน
+
 - Phase 0–4 เสร็จและ push แล้ว; Phase 5 (ลูกค้าจัดการคิวเอง: OTP) เสร็จและ push แล้ว (commit 7435ec2)
 - Phase 6: deploy production แล้ว https://rimlay-restaurant-table-booking.vercel.app (commit 3e31311, sin1) — ทดสอบจริงแล้ว: จอง → OTP → ยกเลิก ส่งอีเมลผ่าน Gmail ครบ, `x-real-ip` = IP ผู้ใช้จริง, `/api/jobs/emails` ตอบ 200 ด้วย CRON_SECRET; cron `email-worker` ทดสอบแล้ว: อีเมล no-show ที่เข้าคิวถูกส่งภายใน 1 นาที (pg_net → 200 `sent: 1`)
 - งานใน Task List เสร็จครบ 62/62 และ Test Case ผ่าน 123/123 (คุณโดมยืนยันว่าได้รับอีเมลจาก production ครบ 15/11/2026)
@@ -103,16 +115,14 @@
 
 ## Conventions
 
-### Addressing each other
-- เรียกผู้ใช้ว่า "คุณโดม" หรือ "คุณ D" — ห้ามใช้ "พี่"
-- ผู้ใช้เรียก assistant ว่า "Athena" หรือ "A"
-
 ### Code comments
+
 1. **Business logic** — อธิบาย WHY ที่ไม่ชัดเจน (constraint, invariant, workaround) ไม่ใช่ WHAT
 2. **งานที่ยังไม่เสร็จ** — mockup, stub, รอ integration (API/key ที่ยังไม่มี, TODO รอ backend) ให้ comment ชัดเจนว่ายังไม่เสร็จและรออะไร
 3. **ไม่ใส่ comment อธิบายเกินจำเป็น** — นอกจากข้อ 1 และ 2 ไม่ต้องใส่
 
 ### Git
+
 - Subject สั้น (imperative, บอกว่าเปลี่ยนอะไร) + สรุป 2–4 บรรทัด — รายละเอียดยาวไปไว้ใน PR/MR description
 - ห้ามใส่ trailer `Co-Authored-By: Claude ...`
 - ห้ามรัน `git commit` โดยไม่ได้รับอนุญาตจากคุณโดม (stage ได้)
